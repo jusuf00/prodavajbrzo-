@@ -1,68 +1,119 @@
-# ProdavajBrzo
+# ProdavajBrzo 🛒
 
-A lightweight buy/sell marketplace web application built with Next.js, TypeScript, and Supabase.
+A modern, lightweight buy/sell marketplace web application built with Next.js 16, TypeScript, and Supabase. Features a clean, responsive design with orange accent colors and smooth user experience.
 
-## Features
+![ProdavajBrzo](https://img.shields.io/badge/ProdavajBrzo-Marketplace-orange?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJDMTMuMSAyIDE0IDIuOSAxNCA0VjE5QzE0IDIwLjEgMTMuMSAyMSAxMiAyMUMxMC45IDIxIDEwIDIwLjEgMTAgMTlWNFY0QzEwIDIuOSAxMC45IDIgMTIgMlpNMTIgN0MxMy4xIDcgMTQgNy45IDE0IDlWMThDMTQgMTkuMSAxMy4xIDIwIDEyIDIwQzEwLjkgMjAgMTAgMTkuMSAxMCAxOFY5QzEwIDcuOSAxMC45IDcgMTIgN1oiIGZpbGw9IiNGRjdBMDAiLz4KPC9zdmc+)
 
-- **Public Homepage**: Browse all active listings or see "No listings available" message
-- **Search & Filter**: Find products by title and category
-- **User Authentication**: Magic link email authentication (passwordless)
-- **Dashboard**: Manage your listings with statistics
-- **CRUD Operations**: Create, read, update, delete listings
-- **Image Uploads**: Upload product images to Supabase Storage
-- **Responsive Design**: Clean UI with white background, orange accents (#FF7A00), and black text
+## ✨ Features
 
-## Tech Stack
+- **🏠 Public Homepage**: Browse latest active listings with hero section and search bar
+- **🔍 Advanced Search & Filter**: Find products by title, category with real-time filtering
+- **🔐 Passwordless Authentication**: Magic link email authentication via Supabase
+- **📊 User Dashboard**: Comprehensive listing management with statistics and analytics
+- **📝 Full CRUD Operations**: Create, read, update, delete listings with ease
+- **🖼️ Image Management**: Multiple image uploads with Supabase Storage integration
+- **📍 Location Features**: Interactive maps for listing locations using Leaflet
+- **📱 Responsive Design**: Clean UI with white background, orange accents (#FF7A00), and smooth animations
+- **⚡ Real-time Updates**: Live data synchronization with TanStack Query
+- **🎨 Modern UI**: Built with Shadcn/ui components and Tailwind CSS
 
-- **Frontend**: Next.js 15, TypeScript, Tailwind CSS
-- **UI Components**: Shadcn/ui, Radix UI
-- **State Management**: TanStack Query (React Query)
-- **Forms**: React Hook Form, Zod validation
-- **Backend**: Supabase (PostgreSQL, Auth, Storage)
-- **Notifications**: Sonner toasts
+## 🛠️ Tech Stack
 
-## Getting Started
+### Frontend Framework
+- **Next.js 16** - React framework with App Router
+- **TypeScript** - Type-safe JavaScript
+- **Tailwind CSS** - Utility-first CSS framework
+
+### UI & Components
+- **Shadcn/ui** - Modern component library
+- **Radix UI** - Accessible, unstyled UI primitives
+- **Lucide React** - Beautiful icon library
+
+### State & Data Management
+- **TanStack Query** - Powerful data synchronization
+- **React Hook Form** - Performant forms with validation
+- **Zod** - TypeScript-first schema validation
+
+### Backend & Database
+- **Supabase** - Open source Firebase alternative
+  - PostgreSQL database
+  - Real-time subscriptions
+  - Built-in authentication
+  - File storage
+  - Edge functions
+
+### Maps & Location
+- **Leaflet** - Interactive maps
+- **React Leaflet** - React components for Leaflet
+
+### Development Tools
+- **ESLint** - Code linting
+- **Next.js ESLint config** - Framework-specific rules
+- **Tailwind CSS v4** - Latest CSS framework version
+
+## 🚀 Getting Started
 
 ### Prerequisites
+- **Node.js 18+** - Download from [nodejs.org](https://nodejs.org/)
+- **Supabase Account** - Sign up at [supabase.com](https://supabase.com)
+- **Git** - Version control system
 
-- Node.js 18+
-- Supabase account and project
+### Quick Setup
 
-### Installation
-
-1. Clone the repository:
+1. **Clone the repository**:
 ```bash
-git clone <repository-url>
+git clone https://github.com/jusuf00/prodavajbrzo-.git
 cd prodavajbrzo
 ```
 
-2. Install dependencies:
+2. **Install dependencies**:
 ```bash
 npm install
 ```
 
-3. Set up environment variables:
-Create a `.env.local` file with your Supabase credentials:
+3. **Environment Configuration**:
+Create a `.env.local` file in the root directory:
 ```env
-NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
 ```
 
-4. Set up the database:
-Run the SQL schema in your Supabase SQL Editor:
-```sql
--- Copy the contents of database-schema.sql and run it in Supabase
-```
+4. **Database Setup**:
+- Open your Supabase project dashboard
+- Go to SQL Editor
+- Copy and run the contents of `database-schema.sql`
 
-5. Create a storage bucket:
-In your Supabase dashboard, create a storage bucket called `listing-images` with public access.
+5. **Storage Setup**:
+- In Supabase dashboard, go to Storage
+- Create a new bucket named `listing-images`
+- Set it to public access
 
-6. Run the development server:
+6. **Start Development Server**:
 ```bash
 npm run dev
 ```
 
-7. Open [http://localhost:3000](http://localhost:3000) in your browser.
+7. **Open your browser**:
+Navigate to [http://localhost:3000](http://localhost:3000)
+
+### 📋 Available Scripts
+
+```bash
+npm run dev      # Start development server
+npm run build    # Build for production
+npm run start    # Start production server
+npm run lint     # Run ESLint
+```
+
+### 🔧 Development Workflow
+
+```bash
+# After making changes
+npm run dev                    # Test locally
+git add .                      # Stage changes
+git commit -m "Your message"   # Commit changes
+git push origin master         # Deploy to production
+```
 
 ## Database Schema
 
@@ -72,71 +123,161 @@ The application uses three main tables:
 - `categories`: Product categories
 - `listings`: Product listings with seller, category, and status information
 
-## Project Structure
+## 📁 Project Structure
 
 ```
-/app
-  /(public)
-    /home          # Public homepage
-    /listings      # Search and filter page
-    /dashboard     # User dashboard
-    /auth          # Authentication page
-  /api             # API routes (if needed)
-/components
-  Header.tsx       # Site header with auth
-  Footer.tsx       # Site footer
-  ListingCard.tsx  # Product listing card
-/lib
-  supabase.ts      # Supabase client
-  providers.tsx    # React Query and Auth providers
-  api.ts          # API functions
-  storage.ts      # Image upload utilities
-  types.ts        # TypeScript interfaces
+prodavajbrzo/
+├── src/
+│   ├── app/                    # Next.js App Router
+│   │   ├── (public)/          # Public routes (no auth required)
+│   │   │   ├── home/          # Landing page with hero section
+│   │   │   ├── listings/      # Browse/search listings
+│   │   │   └── page.tsx       # Root redirect
+│   │   ├── auth/              # Authentication page
+│   │   ├── dashboard/         # Protected user dashboard
+│   │   │   ├── [id]/          # Dynamic routes for editing
+│   │   │   ├── new/           # Create new listing
+│   │   │   └── page.tsx       # Dashboard overview
+│   │   ├── globals.css        # Global styles & Tailwind
+│   │   ├── layout.tsx         # Root layout with providers
+│   │   └── page.tsx           # Home page redirect
+│   ├── components/            # Reusable UI components
+│   │   ├── ui/                # Shadcn/ui components
+│   │   ├── Header.tsx         # Navigation with auth
+│   │   ├── Footer.tsx         # Site footer
+│   │   ├── ListingCard.tsx    # Product card component
+│   │   └── LocationMap.tsx    # Interactive map component
+│   └── lib/                   # Utility libraries
+│       ├── api.ts             # API functions for listings
+│       ├── providers.tsx      # React Query & Auth providers
+│       ├── storage.ts         # Image upload utilities
+│       ├── supabase.ts        # Supabase client config
+│       ├── types.ts           # TypeScript interfaces
+│       └── utils.ts           # Helper functions
+├── public/                    # Static assets
+├── database-schema.sql        # Database setup
+├── next.config.ts            # Next.js configuration
+├── tailwind.config.ts        # Tailwind CSS config
+├── components.json           # Shadcn/ui config
+└── package.json              # Dependencies & scripts
 ```
 
-## Features Overview
+## 🎯 Key Features
 
-### Authentication
-- Magic link email authentication
-- Automatic user profile creation
-- Session management with real-time updates
+### 🔐 Authentication System
+- **Passwordless Login**: Magic link email authentication
+- **Auto Profile Creation**: User profiles created automatically
+- **Session Management**: Real-time session updates with Supabase
+- **Secure**: No passwords stored, email-based authentication
 
-### Listings Management
-- Create listings with title, description, price, category
-- Upload product images
-- Draft and active status management
-- Edit and delete your own listings
+### 📝 Complete Listings Management
+- **Create Listings**: Rich form with title, description, price, category
+- **Multiple Images**: Upload up to multiple product images
+- **Location Integration**: Interactive maps for precise locations
+- **Status Management**: Draft/Active status for listings
+- **Full CRUD**: Create, Read, Update, Delete operations
+- **Image Optimization**: Automatic image resizing and optimization
 
-### Search & Discovery
-- Search by product title
-- Filter by category
-- Responsive grid layout
-- Image previews
+### 🔍 Advanced Search & Discovery
+- **Real-time Search**: Instant search by product title
+- **Category Filtering**: Filter by product categories
+- **Responsive Grid**: Adaptive layout for all screen sizes
+- **Image Galleries**: High-quality image previews
+- **Location-based**: Find products near you
 
-### Dashboard
-- View all your listings
-- Statistics (total, active, draft listings)
-- Quick actions (edit, delete)
+### 📊 User Dashboard
+- **Analytics Overview**: Total, active, and draft listing counts
+- **Quick Actions**: Edit and delete buttons on each listing
+- **Status Indicators**: Visual status badges
+- **Management Tools**: Comprehensive listing management interface
 
-## Deployment
+### 🗺️ Location Features
+- **Interactive Maps**: Click-to-select locations
+- **Geocoding**: Automatic address lookup
+- **Current Location**: GPS-based location detection
+- **Map Integration**: Leaflet-powered maps with custom markers
 
-The application can be deployed to Vercel, Netlify, or any platform supporting Next.js:
+### 🎨 User Experience
+- **Smooth Animations**: Hover effects and transitions
+- **Orange Accents**: Consistent branding with #FF7A00
+- **Clean Design**: White background, modern typography
+- **Mobile-First**: Responsive design for all devices
+- **Loading States**: Skeleton loaders and progress indicators
 
-1. Build the application:
+## 🚀 Deployment
+
+### Vercel (Recommended)
+ProdavajBrzo is optimized for Vercel deployment with automatic CI/CD:
+
+1. **Connect Repository**: Import your GitHub repo to Vercel
+2. **Environment Variables**: Add Supabase credentials in Vercel dashboard
+3. **Auto-Deploy**: Every push to `master` triggers automatic deployment
+4. **Live URL**: Get instant HTTPS URLs for preview and production
+
+### Manual Deployment
+For other platforms supporting Next.js:
+
 ```bash
+# Build for production
 npm run build
+
+# Start production server
+npm run start
 ```
 
-2. Deploy the `.next` folder and required files.
+## 🤝 Contributing
 
-## Contributing
+We welcome contributions! Here's how to get started:
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+1. **Fork** the repository on GitHub
+2. **Clone** your fork locally
+3. **Create** a feature branch: `git checkout -b feature/amazing-feature`
+4. **Make** your changes and test thoroughly
+5. **Commit** your changes: `git commit -m 'Add amazing feature'`
+6. **Push** to your branch: `git push origin feature/amazing-feature`
+7. **Open** a Pull Request on GitHub
 
-## License
+### Development Guidelines
+- Follow TypeScript best practices
+- Write descriptive commit messages
+- Test your changes locally before pushing
+- Ensure code passes linting: `npm run lint`
 
-This project is licensed under the MIT License.
+## 📊 Database Schema
+
+The application uses three main tables in Supabase:
+
+- **`user_profiles`**: Extended user information and preferences
+- **`categories`**: Product categories for organization
+- **`listings`**: Main product listings with seller, category, and status
+
+Run `database-schema.sql` in your Supabase SQL editor to set up the database.
+
+## 🐛 Troubleshooting
+
+### Common Issues:
+- **Build fails**: Check TypeScript errors with `npm run lint`
+- **Images not loading**: Verify Supabase storage bucket permissions
+- **Auth not working**: Confirm environment variables are set correctly
+- **Maps not displaying**: Check Leaflet CSS imports
+
+### Support:
+- Check browser console for errors
+- Verify Supabase project is active
+- Ensure all environment variables are configured
+
+## 📄 License
+
+This project is licensed under the **MIT License** - see the LICENSE file for details.
+
+## 🙏 Acknowledgments
+
+- **Next.js** - The React framework for production
+- **Supabase** - Open source Firebase alternative
+- **Shadcn/ui** - Beautiful UI components
+- **Tailwind CSS** - Utility-first CSS framework
+- **Leaflet** - Interactive maps for the web
+
+---
+
+**Built with ❤️ using modern web technologies**

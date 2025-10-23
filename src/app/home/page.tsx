@@ -102,7 +102,7 @@ export default function HomePage() {
                   placeholder="Search products..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-12 pr-4 py-3 text-lg border-0 focus:ring-2 focus:ring-orange-500 rounded-lg"
+                  className="pl-12 pr-4 py-3 text-lg border-2 border-orange-300 focus:ring-2 focus:ring-orange-500 rounded-lg"
                 />
               </div>
               <Select value={category} onValueChange={setCategory}>

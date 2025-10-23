@@ -21,7 +21,7 @@ export function Header() {
   return (
     <header className="border-b bg-white">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-        <Link href="/home" className="flex items-center gap-3 text-2xl font-bold text-black hover:text-orange-600">
+        <Link href="/home" className="flex items-center gap-3 text-2xl font-bold text-black hover:text-orange-600 transition-colors">
           <img src="/icons/prodavajbrzoicon.png" alt="ProdavajBrzo Logo" className="h-10 w-10" />
           ProdavajBrzo
         </Link>

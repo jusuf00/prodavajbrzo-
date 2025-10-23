@@ -77,7 +77,7 @@ export default function HomePage() {
             Welcome to ProdavajBrzo
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Find great deals on products from sellers worldwide.
+            Find great deals on products from sellers worldwide. Buy and sell with ease!
           </p>
 
           {/* Add Listing Button - Show for all users but redirect to auth if not signed in */}

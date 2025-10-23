@@ -16,8 +16,26 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ProdavajBrzo",
-  description: "Lightweight buy/sell marketplace",
+  title: "ProdavajBrzo - Buy & Sell Marketplace",
+  description: "Discover great deals on products from sellers worldwide. Buy and sell with ease on ProdavajBrzo.",
+  keywords: "marketplace, buy, sell, products, online shopping, deals",
+  authors: [{ name: "ProdavajBrzo Team" }],
+  openGraph: {
+    title: "ProdavajBrzo - Buy & Sell Marketplace",
+    description: "Discover great deals on products from sellers worldwide",
+    url: "https://prodavajbrzo.vercel.app",
+    siteName: "ProdavajBrzo",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ProdavajBrzo - Buy & Sell Marketplace",
+    description: "Discover great deals on products from sellers worldwide",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({

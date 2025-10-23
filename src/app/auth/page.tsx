@@ -25,7 +25,7 @@ export default function AuthPage() {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/dashboard`,
+          emailRedirectTo: `${typeof window !== 'undefined' ? window.location.origin : 'https://prodavajbrzo.vercel.app'}/dashboard`,
           data: {
             custom_email_template: {
               subject: 'Welcome to ProdavajBrzo! 🎉',

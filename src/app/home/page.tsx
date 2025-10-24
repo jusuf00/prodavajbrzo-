@@ -74,7 +74,8 @@ export default function HomePage() {
           })
         } catch (error) {
           console.error('Location permission denied or error:', error)
-          toast.error('Location access denied. You can still browse listings, but distance information won\'t be available.', {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+          toast.error(`Location access failed: ${errorMessage}. You can still browse listings, but distance information won\'t be available.`, {
             duration: 6000,
             action: {
               label: 'Try Again',

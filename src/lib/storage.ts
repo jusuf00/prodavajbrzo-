@@ -26,7 +26,9 @@ export function requestLocationPermission(): Promise<UserLocation> {
         resolve(location)
       },
       (error) => {
-        reject(error)
+        // Provide a more descriptive error message
+        const errorMessage = error.message || (error.code === 1 ? 'Permission denied' : error.code === 2 ? 'Position unavailable' : error.code === 3 ? 'Timeout' : 'Unknown error')
+        reject(new Error(`Location access failed: ${errorMessage}`))
       },
       {
         enableHighAccuracy: true,

@@ -2,10 +2,11 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/lib/providers'
-import { getUserListings, deleteListing, getCategories } from '@/lib/api'
+import { getUserListings, deleteListing, getCategories, markListingAsSold } from '@/lib/api'
 import { ListingCard } from '@/components/ListingCard'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { Plus, BarChart3, Package, TrendingUp } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -35,6 +36,7 @@ export default function DashboardPage() {
     queryFn: getCategories,
   })
 
+
   const deleteMutation = useMutation({
     mutationFn: deleteListing,
     onSuccess: () => {
@@ -43,6 +45,17 @@ export default function DashboardPage() {
     },
     onError: () => {
       toast.error('Failed to delete listing')
+    },
+  })
+
+  const markSoldMutation = useMutation({
+    mutationFn: markListingAsSold,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-listings'] })
+      toast.success('Listing marked as sold!')
+    },
+    onError: () => {
+      toast.error('Failed to mark listing as sold')
     },
   })
 
@@ -64,18 +77,18 @@ export default function DashboardPage() {
     return null // Will redirect
   }
 
-  const activeListings = listings?.filter(l => l.status === 'active') || []
-  const draftListings = listings?.filter(l => l.status === 'draft') || []
+  const activeListings = listings?.filter(l => !l.is_sold) || []
+  const soldListings = listings?.filter(l => l.is_sold) || []
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
-        <p className="text-gray-600">Manage your listings and view statistics</p>
+        <p className="text-gray-600">Welcome back, {user?.email?.split('@')[0] || 'User'}! Manage your listings and view statistics</p>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Listings</CardTitle>
@@ -98,23 +111,19 @@ export default function DashboardPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Draft Listings</CardTitle>
+            <CardTitle className="text-sm font-medium">Sold Listings</CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{draftListings.length}</div>
+            <div className="text-2xl font-bold">{soldListings.length}</div>
           </CardContent>
         </Card>
+
       </div>
 
       {/* Actions */}
       <div className="mb-8">
-        <Link href="/dashboard/new">
-          <Button className="bg-orange-600 hover:bg-orange-700">
-            <Plus className="mr-2 h-4 w-4" />
-            Create New Listing
-          </Button>
-        </Link>
+        {/* Create New Listing button removed as requested */}
       </div>
 
       {/* Listings */}
@@ -128,6 +137,20 @@ export default function DashboardPage() {
                 <div key={listing.id} className="relative">
                   <ListingCard listing={listing} isActive={true} />
                   <div className="absolute top-2 right-2 flex gap-2">
+                    {listing.is_sold && (
+                      <Badge variant="secondary" className="bg-red-100 text-red-800 mr-2">
+                        SOLD
+                      </Badge>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="bg-green-600 hover:bg-green-700 text-white border-green-600"
+                      onClick={() => markSoldMutation.mutate(listing.id)}
+                      disabled={markSoldMutation.isPending}
+                    >
+                      {markSoldMutation.isPending ? 'Marking...' : 'Mark Sold'}
+                    </Button>
                     <Link href={`/dashboard/${listing.id}/edit`}>
                       <Button size="sm" variant="outline">Edit</Button>
                     </Link>
@@ -145,15 +168,18 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Draft Listings */}
-        {draftListings.length > 0 && (
+        {/* Sold Listings */}
+        {soldListings.length > 0 && (
           <div>
-            <h2 className="text-2xl font-semibold mb-4">Draft Listings</h2>
+            <h2 className="text-2xl font-semibold mb-4">Sold Listings</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {draftListings.map((listing) => (
+              {soldListings.map((listing) => (
                 <div key={listing.id} className="relative">
-                  <ListingCard listing={listing} />
+                  <ListingCard listing={listing} isActive={false} />
                   <div className="absolute top-2 right-2 flex gap-2">
+                    <Badge variant="secondary" className="bg-red-100 text-red-800 mr-2">
+                      SOLD
+                    </Badge>
                     <Link href={`/dashboard/${listing.id}/edit`}>
                       <Button size="sm" variant="outline">Edit</Button>
                     </Link>

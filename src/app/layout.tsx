@@ -47,10 +47,11 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white text-black min-h-screen flex flex-col`}
+        suppressHydrationWarning
       >
         <Providers>
           <Header />
-          <main className="flex-1">
+          <main className="flex-1 pb-45">
             {children}
           </main>
           <Footer />

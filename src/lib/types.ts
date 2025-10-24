@@ -10,6 +10,8 @@ export interface Category {
   id: string
   name: string
   slug: string
+  parent_id?: string
+  icon?: string
 }
 
 export interface ListingImage {
@@ -27,8 +29,8 @@ export interface Listing {
   title: string
   description: string
   price: number
-  status: 'draft' | 'active'
   category_id: string
+  is_sold: boolean
   created_at: string
   image_url?: string // Keep for backward compatibility
   images?: ListingImage[]

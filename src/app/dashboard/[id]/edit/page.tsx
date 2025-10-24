@@ -30,7 +30,6 @@ export default function EditListingPage() {
     description: '',
     price: '',
     category_id: '',
-    status: 'active' as 'draft' | 'active',
   })
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
@@ -58,7 +57,6 @@ export default function EditListingPage() {
         description: listing.description,
         price: listing.price.toString(),
         category_id: listing.category_id,
-        status: listing.status,
       })
       setCurrentImages(listing.images || [])
       if (listing.images && listing.images.length > 0) {
@@ -106,7 +104,6 @@ export default function EditListingPage() {
         description: data.description,
         price: parseFloat(data.price),
         category_id: data.category_id,
-        status: data.status,
       }
 
       return updateListing(listingId, updateData)
@@ -245,7 +242,7 @@ export default function EditListingPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="title">Title *</Label>
+              <Label htmlFor="title">Title</Label>
               <Input
                 id="title"
                 value={formData.title}
@@ -256,7 +253,7 @@ export default function EditListingPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description *</Label>
+              <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
                 value={formData.description}
@@ -269,21 +266,27 @@ export default function EditListingPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="price">Price ($) *</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.price}
-                  onChange={(e) => handleChange('price', e.target.value)}
-                  placeholder="0.00"
-                  required
-                />
+                <Label htmlFor="price">Price</Label>
+                <div className="relative">
+                  <Input
+                    id="price"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.price}
+                    onChange={(e) => handleChange('price', e.target.value)}
+                    placeholder="0.00"
+                    className="pr-12"
+                    required
+                  />
+                  <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
+                    MKD
+                  </span>
+                </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="category">Category *</Label>
+                <Label htmlFor="category">Category</Label>
                 <Select value={formData.category_id} onValueChange={(value) => handleChange('category_id', value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select category" />
@@ -399,18 +402,6 @@ export default function EditListingPage() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select value={formData.status} onValueChange={(value: 'draft' | 'active') => handleChange('status', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="draft">Draft (not visible to others)</SelectItem>
-                  <SelectItem value="active">Active (visible to everyone)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
 
             <div className="flex gap-4">
               <Button

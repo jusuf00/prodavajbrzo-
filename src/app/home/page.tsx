@@ -7,15 +7,18 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useState, useEffect } from 'react'
-import { Search, Package, Plus, ArrowRight, ArrowUp } from 'lucide-react'
+import { Search, Package, Plus, ArrowRight, ArrowUp, Grid3X3 } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/lib/providers'
+import { calculateDistance } from '@/lib/utils'
 
 export default function HomePage() {
   const { user } = useAuth()
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('all')
   const [showScrollTop, setShowScrollTop] = useState(false)
+  const [showCategories, setShowCategories] = useState(false)
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -24,6 +27,22 @@ export default function HomePage() {
 
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          })
+        },
+        (error) => {
+          console.error('Error getting location:', error)
+        }
+      )
+    }
   }, [])
 
   const scrollToTop = () => {
@@ -39,7 +58,7 @@ export default function HomePage() {
 
   const { data: categories } = useQuery({
     queryKey: ['categories'],
-    queryFn: () => import('@/lib/api').then(m => m.getCategories()),
+    queryFn: () => import('@/lib/api').then(m => m.getAllCategories()),
   })
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -105,19 +124,57 @@ export default function HomePage() {
                   className="pl-12 pr-4 py-3 text-lg border-2 border-orange-300 focus:ring-2 focus:ring-orange-500 rounded-lg"
                 />
               </div>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger className="w-full md:w-48 py-3 px-4 text-lg border-gray-300 focus:ring-2 focus:ring-orange-500 rounded-lg">
-                  <SelectValue placeholder="All categories" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All categories</SelectItem>
-                  {categories?.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {/* Style 4: Grid-based Category Cards */}
+              <div className="relative">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowCategories(!showCategories)}
+                  className="w-full md:w-48 py-3 px-4 text-lg border-gray-300 focus:ring-2 focus:ring-orange-500 rounded-lg flex items-center justify-between"
+                >
+                  <span>
+                    {category === 'all' ? 'All categories' : categories?.find(cat => cat.id === category)?.name || 'All categories'}
+                  </span>
+                  <Grid3X3 className="h-4 w-4" />
+                </Button>
+
+                {showCategories && (
+                  <div className="absolute top-full mt-2 w-full md:w-80 bg-white border border-gray-300 rounded-lg shadow-lg z-10 p-4 max-h-96 overflow-y-auto">
+                    <div className="flex flex-col gap-3">
+                      <div
+                        onClick={() => {
+                          setCategory('all')
+                          setShowCategories(false)
+                        }}
+                        className={`rounded-lg border-2 p-3 flex items-center cursor-pointer transition-all hover:scale-105 ${
+                          category === 'all'
+                            ? 'border-orange-500 bg-orange-50 shadow-md'
+                            : 'border-gray-200 hover:border-orange-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        <span className="text-sm font-medium">All Categories</span>
+                      </div>
+
+                      {categories?.map((cat, index) => (
+                        <div
+                          key={cat.id}
+                          onClick={() => {
+                            setCategory(cat.id)
+                            setShowCategories(false)
+                          }}
+                          className={`rounded-lg border-2 p-3 flex items-center cursor-pointer transition-all hover:scale-105 ${
+                            category === cat.id
+                              ? 'border-orange-500 bg-orange-50 shadow-md'
+                              : 'border-gray-200 hover:border-orange-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          <span className="text-sm font-medium">{cat.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
               <Button
                 type="submit"
                 className="bg-orange-600 hover:bg-orange-700 px-8 py-3 text-lg font-medium rounded-lg whitespace-nowrap"
@@ -153,9 +210,25 @@ export default function HomePage() {
 
         {listings && listings.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {listings.slice(0, 8).map((listing) => (
-              <ListingCard key={listing.id} listing={listing} isActive={listing.status === 'active'} />
-            ))}
+            {listings.slice(0, 8).map((listing) => {
+              let distance: number | undefined
+              if (userLocation && listing.location_lat && listing.location_lng) {
+                distance = calculateDistance(
+                  userLocation.lat,
+                  userLocation.lng,
+                  listing.location_lat,
+                  listing.location_lng
+                )
+              }
+              return (
+                <ListingCard
+                  key={listing.id}
+                  listing={listing}
+                  isActive={!listing.is_sold}
+                  distance={distance}
+                />
+              )
+            })}
           </div>
         ) : (
           <div className="text-center py-16">
@@ -167,7 +240,7 @@ export default function HomePage() {
               <p className="text-gray-600 mb-6">
                 Be the first to create a listing and start selling your products!
               </p>
-              <Link href="/dashboard">
+              <Link href={user ? "/dashboard/new" : "/dashboard"}>
                 <Button className="bg-orange-600 hover:bg-orange-700 hover:border-orange-500 hover:border-2 px-6 py-3">
                   <Plus className="mr-2 h-5 w-5" />
                   Create Your First Listing

@@ -1,0 +1,1 @@
+// ChatModal removed - Chat functionality has been completely removed from the application

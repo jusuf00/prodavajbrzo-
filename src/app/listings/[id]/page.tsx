@@ -1,15 +1,20 @@
 'use client'
 
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useParams } from 'next/navigation'
 import { getListingById } from '@/lib/api'
+import { useAuth } from '@/lib/providers'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, User, Calendar, Tag, MapPin } from 'lucide-react'
+import { ArrowLeft, User, Calendar, Tag, MapPin, MessageCircle, ChevronLeft, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import dynamic from 'next/dynamic'
+import { getOrCreateConversation } from '@/lib/api'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useRouter } from 'next/navigation'
 
 // Dynamically import the map component to avoid SSR issues
 const LocationDisplayMap = dynamic(() => import('@/components/LocationDisplayMap'), {
@@ -18,8 +23,12 @@ const LocationDisplayMap = dynamic(() => import('@/components/LocationDisplayMap
 })
 
 export default function ListingDetailPage() {
+  const { user } = useAuth()
   const params = useParams()
   const id = params.id as string
+  const router = useRouter()
+  const queryClient = useQueryClient()
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
 
   const { data: listing, isLoading, error } = useQuery({
     queryKey: ['listing', id],
@@ -27,6 +36,34 @@ export default function ListingDetailPage() {
     retry: 3,
     retryDelay: 1000,
     staleTime: 5 * 60 * 1000, // 5 minutes
+  })
+
+  const contactSellerMutation = useMutation({
+    mutationFn: async () => {
+      if (!user || !listing) throw new Error('User or listing not found')
+      if (user.id === listing.seller_id) throw new Error('Cannot contact yourself')
+
+      console.log('Creating conversation for listing:', listing.id, 'buyer:', user.id, 'seller:', listing.seller_id)
+
+      // Get or create conversation
+      const conversation = await getOrCreateConversation(
+        listing.id,
+        user.id,
+        listing.seller_id
+      )
+
+      console.log('Conversation created/found:', conversation)
+      return conversation
+    },
+    onSuccess: (conversation) => {
+      console.log('Navigating to chat with conversation:', conversation.id)
+      // Navigate to chat page with the conversation
+      router.push(`/chat?conversation=${conversation.id}`)
+    },
+    onError: (error: any) => {
+      console.error('Error contacting seller:', error)
+      alert(error.message || 'Failed to contact seller')
+    },
   })
 
   if (isLoading) {
@@ -76,7 +113,7 @@ export default function ListingDetailPage() {
             <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-3">{listing.title}</h1>
             <div className="flex flex-wrap items-center gap-4 mb-3">
               <div className="text-3xl lg:text-4xl font-bold text-orange-600">
-                ${listing.price.toFixed(2)}
+                {listing.price % 1 === 0 ? listing.price.toFixed(0) : listing.price.toFixed(2)} MKD
               </div>
               <Badge variant="secondary" className="px-3 py-1 text-sm">
                 {listing.category?.name}
@@ -93,14 +130,21 @@ export default function ListingDetailPage() {
               </div>
             </div>
           </div>
-          <div className="flex gap-3 lg:flex-col lg:gap-2">
-            <Button className="bg-orange-600 hover:bg-orange-700 px-6">
-              Contact Seller
-            </Button>
-            <Button variant="outline" className="px-6">
-              Share Listing
-            </Button>
-          </div>
+         <div className="flex gap-3 lg:flex-col lg:gap-2">
+           {user && user.id !== listing.seller_id && (
+             <Button
+               className="bg-orange-600 hover:bg-orange-700 px-6"
+               onClick={() => contactSellerMutation.mutate()}
+               disabled={contactSellerMutation.isPending}
+             >
+               <MessageCircle className="mr-2 h-4 w-4" />
+               {contactSellerMutation.isPending ? 'Contacting...' : 'Contact Seller'}
+             </Button>
+           )}
+           <Button variant="outline" className="px-6">
+             Share Listing
+           </Button>
+         </div>
         </div>
       </div>
 
@@ -109,40 +153,66 @@ export default function ListingDetailPage() {
         <div className="lg:col-span-2">
           {listing.images && listing.images.length > 0 ? (
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-              {/* Main Image */}
-              {(() => {
-                const defaultImage = listing.images.find(img => img.is_default) || listing.images[0]
-                return (
-                  <div className="aspect-video relative overflow-hidden rounded-lg mb-4">
-                    <Image
-                      src={defaultImage.image_url}
-                      alt={listing.title}
-                      fill
-                      className="object-contain bg-gray-50"
-                      sizes="(max-width: 1024px) 100vw, 66vw"
-                      priority
-                    />
-                  </div>
-                )
-              })()}
+              {/* Main Image with Navigation */}
+              <div className="relative mb-4">
+                <div className="aspect-video relative overflow-hidden rounded-lg">
+                  <Image
+                    key={currentImageIndex} // Force re-render for smooth transition
+                    src={listing.images[currentImageIndex].image_url}
+                    alt={`${listing.title} - Image ${currentImageIndex + 1}`}
+                    fill
+                    className="object-contain bg-gray-50 transition-all duration-500 ease-in-out transform"
+                    sizes="(max-width: 1024px) 100vw, 66vw"
+                    priority
+                  />
+                </div>
+
+                {/* Navigation Arrows */}
+                {listing.images && listing.images.length > 1 && (
+                  <>
+                    <button
+                      onClick={() => setCurrentImageIndex(prev => prev === 0 ? listing.images!.length - 1 : prev - 1)}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
+                      aria-label="Previous image"
+                    >
+                      <ChevronLeft className="h-6 w-6" />
+                    </button>
+                    <button
+                      onClick={() => setCurrentImageIndex(prev => prev === listing.images!.length - 1 ? 0 : prev + 1)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
+                      aria-label="Next image"
+                    >
+                      <ChevronRight className="h-6 w-6" />
+                    </button>
+
+                    {/* Image Counter */}
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
+                      {currentImageIndex + 1} / {listing.images!.length}
+                    </div>
+                  </>
+                )}
+              </div>
 
               {/* Thumbnail Grid */}
-              {listing.images.length > 1 && (
+              {listing.images && listing.images.length > 1 && (
                 <div className="grid grid-cols-5 gap-3">
-                  {listing.images
-                    .filter(img => !img.is_default)
-                    .slice(0, 4)
-                    .map((image, index) => (
-                      <div key={image.id} className="aspect-square relative overflow-hidden rounded-lg cursor-pointer border-2 border-transparent hover:border-orange-300 transition-colors">
-                        <Image
-                          src={image.image_url}
-                          alt={`${listing.title} ${index + 2}`}
-                          fill
-                          className="object-contain bg-gray-50 hover:scale-105 transition-transform"
-                          sizes="(max-width: 1024px) 20vw, 13vw"
-                        />
-                      </div>
-                    ))}
+                  {listing.images.map((image, index) => (
+                    <div
+                      key={image.id}
+                      className={`aspect-square relative overflow-hidden rounded-lg cursor-pointer border-2 transition-colors ${
+                        index === currentImageIndex ? 'border-orange-500' : 'border-transparent hover:border-orange-300'
+                      }`}
+                      onClick={() => setCurrentImageIndex(index)}
+                    >
+                      <Image
+                        src={image.image_url}
+                        alt={`${listing.title} - Thumbnail ${index + 1}`}
+                        fill
+                        className="object-contain bg-gray-50 hover:scale-105 transition-transform"
+                        sizes="(max-width: 1024px) 20vw, 13vw"
+                      />
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -207,6 +277,7 @@ export default function ListingDetailPage() {
 
         </div>
       </div>
+
     </div>
   )
 }

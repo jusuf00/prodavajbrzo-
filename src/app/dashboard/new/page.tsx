@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/lib/providers'
-import { createListing, getCategories, createListingImages } from '@/lib/api'
+import { createListing, getAllCategories, createListingImages } from '@/lib/api'
 import { uploadListingImages } from '@/lib/storage'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -28,7 +28,6 @@ export default function NewListingPage() {
     description: '',
     price: '',
     category_id: '',
-    status: 'active' as 'draft' | 'active',
     location_lat: '',
     location_lng: '',
     location_address: '',
@@ -40,80 +39,89 @@ export default function NewListingPage() {
 
   const { data: categories } = useQuery({
     queryKey: ['categories'],
-    queryFn: getCategories,
+    queryFn: getAllCategories,
     retry: 1,
   })
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      console.log('Creating listing with data:', data)
+      console.log('🔄 Starting listing creation with data:', data)
 
-      // Create listing first to get the ID
-      const listing = await createListing({
-        seller_id: user!.id,
-        title: data.title,
-        description: data.description,
-        price: parseFloat(data.price),
-        category_id: data.category_id,
-        status: data.status,
-        location_lat: data.location_lat ? parseFloat(data.location_lat) : undefined,
-        location_lng: data.location_lng ? parseFloat(data.location_lng) : undefined,
-        location_address: data.location_address || undefined,
-      })
-
-      console.log('Listing created:', listing)
-
-      // Upload images if provided
-      if (imageFiles.length > 0) {
-        console.log('Uploading images...')
-        try {
-          const uploadedImages = await uploadListingImages(imageFiles, listing.id, defaultImageIndex)
-          console.log('Images uploaded:', uploadedImages)
-          await createListingImages(listing.id, uploadedImages)
-          console.log('Images linked to listing')
-        } catch (error) {
-          console.error('Image upload failed:', error)
-          throw new Error('Failed to upload images')
+      try {
+        // Validate required fields
+        console.log('🔍 Validating fields...')
+        if (!data.title?.trim()) {
+          console.error('❌ Title validation failed')
+          throw new Error('Title is required')
         }
-      }
+        if (!data.description?.trim()) {
+          console.error('❌ Description validation failed')
+          throw new Error('Description is required')
+        }
+        if (!data.price || isNaN(parseFloat(data.price))) {
+          console.error('❌ Price validation failed:', data.price)
+          throw new Error('Valid price is required')
+        }
+        if (!data.category_id) {
+          console.error('❌ Category validation failed')
+          throw new Error('Category is required')
+        }
+        console.log('✅ Validation passed')
 
-      return listing
+        // Create listing first to get the ID
+        console.log('📝 Creating listing in database...')
+        const listing = await createListing({
+          seller_id: user!.id,
+          title: data.title.trim(),
+          description: data.description.trim(),
+          price: parseFloat(data.price),
+          category_id: data.category_id,
+          location_lat: data.location_lat ? parseFloat(data.location_lat) : undefined,
+          location_lng: data.location_lng ? parseFloat(data.location_lng) : undefined,
+          location_address: data.location_address?.trim() || undefined,
+        })
+        console.log('✅ Listing created:', listing)
+
+        // Upload images if provided
+        if (imageFiles.length > 0) {
+          console.log('🖼️ Uploading', imageFiles.length, 'images...')
+          try {
+            const uploadedImages = await uploadListingImages(imageFiles, listing.id, defaultImageIndex)
+            console.log('✅ Images uploaded:', uploadedImages)
+            await createListingImages(listing.id, uploadedImages)
+            console.log('✅ Images linked to listing')
+          } catch (error) {
+            console.error('❌ Image upload failed:', error)
+            throw new Error('Failed to upload images')
+          }
+        } else {
+          console.log('ℹ️ No images to upload')
+        }
+
+        console.log('🎉 Listing creation completed successfully')
+        return listing
+      } catch (error) {
+        console.error('💥 Error in listing creation:', error)
+        throw error
+      }
     },
-    onSuccess: () => {
-      console.log('Listing creation successful')
+    onSuccess: (data) => {
+      console.log('🎯 Mutation onSuccess called with:', data)
       queryClient.invalidateQueries({ queryKey: ['user-listings', user?.id] })
+      queryClient.invalidateQueries({ queryKey: ['listings'] })
       toast.success('Listing created successfully')
       router.push('/dashboard')
     },
     onError: (error: any) => {
-      console.error('Listing creation failed:', error)
+      console.error('🚨 Mutation onError called:', error)
       toast.error(error.message || 'Failed to create listing')
     },
   })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-
-    if (!formData.title.trim()) {
-      toast.error('Title is required')
-      return
-    }
-
-    if (!formData.description.trim()) {
-      toast.error('Description is required')
-      return
-    }
-
-    if (!formData.price || isNaN(parseFloat(formData.price))) {
-      toast.error('Valid price is required')
-      return
-    }
-
-    if (!formData.category_id) {
-      toast.error('Category is required')
-      return
-    }
-
+    console.log('📋 Form submitted with data:', formData)
+    console.log('🔄 Starting mutation...')
     createMutation.mutate(formData)
   }
 
@@ -200,45 +208,51 @@ export default function NewListingPage() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="title">Title *</Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => handleChange('title', e.target.value)}
-                placeholder="Enter product title"
-                required
-              />
-            </div>
+                <Label htmlFor="title">Title</Label>
+                <Input
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => handleChange('title', e.target.value)}
+                  placeholder="Enter product title"
+                  required
+                />
+              </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description *</Label>
+              <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleChange('description', e.target.value)}
                 placeholder="Describe your product"
-                rows={4}
+                rows={6}
                 required
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="price">Price ($) *</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.price}
-                  onChange={(e) => handleChange('price', e.target.value)}
-                  placeholder="0.00"
-                  required
-                />
+                <Label htmlFor="price">Price</Label>
+                <div className="relative">
+                  <Input
+                    id="price"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.price}
+                    onChange={(e) => handleChange('price', e.target.value)}
+                    placeholder="0.00"
+                    className="pr-12"
+                    required
+                  />
+                  <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
+                    MKD
+                  </span>
+                </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="category">Category *</Label>
+                <Label htmlFor="category">Category</Label>
                 <Select value={formData.category_id} onValueChange={(value) => handleChange('category_id', value)}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select category" />
@@ -255,7 +269,7 @@ export default function NewListingPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="images" className="text-center">Product Images (Up to 5, Optional)</Label>
+              <Label htmlFor="images" className="text-center">Product Images</Label>
               <div className="space-y-4">
                 <div className="relative">
                   <input
@@ -280,7 +294,7 @@ export default function NewListingPage() {
                     ) : (
                       <>
                         <Upload className="mr-2 h-4 w-4" />
-                        Upload Images (Max 5)
+                        Upload Images (Max Limit 5)
                       </>
                     )}
                   </Button>
@@ -325,7 +339,7 @@ export default function NewListingPage() {
             </div>
 
             <div className="space-y-2 relative z-10">
-              <Label htmlFor="location">Location (Optional)</Label>
+              <Label htmlFor="location">Location</Label>
               <LocationMap
                 onLocationSelect={handleLocationSelect}
                 initialLat={formData.location_lat ? parseFloat(formData.location_lat) : undefined}
@@ -333,18 +347,6 @@ export default function NewListingPage() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select value={formData.status} onValueChange={(value: 'draft' | 'active') => handleChange('status', value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="draft">Draft (not visible to others)</SelectItem>
-                  <SelectItem value="active">Active (visible to everyone)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
 
             <div className="flex gap-4">
               <Button

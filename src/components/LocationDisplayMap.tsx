@@ -21,6 +21,7 @@ interface LocationDisplayMapProps {
 
 export default function LocationDisplayMap({ lat, lng, address }: LocationDisplayMapProps) {
   const [isClient, setIsClient] = useState(false)
+  const [mapError, setMapError] = useState(false)
 
   useEffect(() => {
     setIsClient(true)
@@ -30,6 +31,19 @@ export default function LocationDisplayMap({ lat, lng, address }: LocationDispla
     return (
       <div className="h-48 rounded-lg overflow-hidden border bg-gray-100 flex items-center justify-center">
         <div className="text-gray-500">Loading map...</div>
+      </div>
+    )
+  }
+
+  if (mapError) {
+    return (
+      <div className="h-48 rounded-lg overflow-hidden border border-gray-200 shadow-sm bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-500 text-center">
+          <div className="text-sm">Map unavailable</div>
+          <div className="text-xs mt-1">
+            {address || `Location: ${lat.toFixed(6)}, ${lng.toFixed(6)}`}
+          </div>
+        </div>
       </div>
     )
   }

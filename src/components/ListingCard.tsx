@@ -1,6 +1,6 @@
 import { Listing } from '@/lib/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { formatTimeAgo } from '@/lib/utils'
+import { formatTimeAgo, formatDistance } from '@/lib/utils'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Clock, MapPin } from 'lucide-react'
@@ -8,9 +8,10 @@ import { Clock, MapPin } from 'lucide-react'
 interface ListingCardProps {
   listing: Listing
   isActive?: boolean
+  distance?: number
 }
 
-export function ListingCard({ listing, isActive }: ListingCardProps) {
+export function ListingCard({ listing, isActive, distance }: ListingCardProps) {
   // Get the default image or first image from the images array, fallback to legacy image_url
   const displayImage = listing.images && listing.images.length > 0
     ? (listing.images.find(img => img.is_default) || listing.images[0]).image_url
@@ -31,16 +32,21 @@ export function ListingCard({ listing, isActive }: ListingCardProps) {
               />
             </div>
           )}
-          <CardHeader className="flex-shrink-0">
+          <CardHeader className="flex-shrink-0 relative">
             <CardTitle className="text-lg hover:text-orange-600">
               {listing.title}
             </CardTitle>
+            {distance && (
+              <div className="absolute top-0 right-2 text-xs text-white bg-green-600 px-2 py-1 rounded-full font-medium shadow-sm">
+                {formatDistance(distance)}
+              </div>
+            )}
           </CardHeader>
           <CardContent className="flex-1 flex flex-col justify-between">
             <p className="text-gray-600 mb-2 line-clamp-2">{listing.description}</p>
             <div className="flex justify-between items-center">
               <span className="text-2xl font-bold text-orange-600">
-                ${listing.price.toFixed(2)}
+                {listing.price % 1 === 0 ? listing.price.toFixed(0) : listing.price.toFixed(2)} MKD
               </span>
               <span className="text-sm text-gray-500">
                 {listing.category?.name}

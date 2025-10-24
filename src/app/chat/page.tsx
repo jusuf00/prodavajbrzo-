@@ -13,6 +13,7 @@ import Image from 'next/image'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
 
 // Define types for our chat system
 type Message = {
@@ -53,7 +54,7 @@ type Conversation = {
 
 import { getConversationsWithLatestMessage, getUnreadMessageCount, markConversationRead, getConversationMessages, sendMessage } from '@/lib/api'
 
-export default function ChatPage() {
+function ChatContent() {
   const { user } = useAuth()
   const queryClient = useQueryClient()
   const searchParams = useSearchParams()
@@ -257,6 +258,15 @@ export default function ChatPage() {
       </div>
     )
   }
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense fallback={<div className="container mx-auto px-4 py-8"><div className="text-center">Loading chat...</div></div>}>
+      <ChatContent />
+    </Suspense>
+  )
+}
 
   return (
     <div className="container mx-auto px-4 py-8">

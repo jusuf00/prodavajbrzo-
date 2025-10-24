@@ -144,7 +144,7 @@ function ListingsContent() {
       {listings && listings.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
           {listings.map((listing) => (
-            <ListingCard key={listing.id} listing={listing} isActive={listing.status === 'active'} />
+            <ListingCard key={listing.id} listing={listing} isActive={!listing.is_sold} />
           ))}
         </div>
       ) : (

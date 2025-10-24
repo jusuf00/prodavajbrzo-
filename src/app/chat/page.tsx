@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { ArrowLeft, MessageCircle, Mail, Clock, DollarSign, Send, User } from 'lucide-react'
+import { ArrowLeft, MessageCircle, Mail, Send } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { toast } from 'sonner'
@@ -90,16 +90,16 @@ function ChatContent() {
     onSuccess: (data, conversationId) => {
       console.log('Mark read success for conversation:', conversationId)
       // Update the conversation list to reflect the read status
-      queryClient.setQueryData(['user-conversations', user?.id], (oldData: any) => {
+      queryClient.setQueryData(['user-conversations', user?.id], (oldData: Conversation[]) => {
         if (!oldData) return oldData
-        return oldData.map((conv: any) =>
+        return oldData.map((conv: Conversation) =>
           conv.id === conversationId ? { ...conv, unread_count: 0 } : conv
         )
       })
       // Update unread count
       queryClient.invalidateQueries({ queryKey: ['unread-messages', user?.id] })
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error('Mark read mutation error:', error)
     },
   })
@@ -120,7 +120,7 @@ function ChatContent() {
       queryClient.invalidateQueries({ queryKey: ['user-conversations', user?.id] })
       queryClient.invalidateQueries({ queryKey: ['unread-messages', user?.id] })
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to send message')
     },
   })
@@ -136,7 +136,7 @@ function ChatContent() {
         })
       }, 100)
     }
-  }, [conversationMessages])
+  }, [conversationMessages]) // eslint-disable-line react-hooks/set-state-in-effect
 
   // Auto-select conversation from URL parameter
   useEffect(() => {
@@ -152,7 +152,7 @@ function ChatContent() {
         console.log('Conversation not found in list')
       }
     }
-  }, [conversationId, conversations, selectedConversation])
+  }, [conversationId, conversations, selectedConversation, markReadMutation]) // eslint-disable-line react-hooks/set-state-in-effect
 
   useEffect(() => {
     if (selectedConversation?.id) {
@@ -258,15 +258,6 @@ function ChatContent() {
       </div>
     )
   }
-}
-
-export default function ChatPage() {
-  return (
-    <Suspense fallback={<div className="container mx-auto px-4 py-8"><div className="text-center">Loading chat...</div></div>}>
-      <ChatContent />
-    </Suspense>
-  )
-}
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -495,5 +486,13 @@ export default function ChatPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense fallback={<div className="container mx-auto px-4 py-8"><div className="text-center">Loading chat...</div></div>}>
+      <ChatContent />
+    </Suspense>
   )
 }

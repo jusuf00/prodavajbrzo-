@@ -29,8 +29,13 @@ export default function LocationDisplayMap({ lat, lng, address }: LocationDispla
 
   if (!isClient) {
     return (
-      <div className="h-48 rounded-lg overflow-hidden border bg-gray-100 flex items-center justify-center">
-        <div className="text-gray-500">Loading map...</div>
+      <div className="h-48 rounded-lg overflow-hidden border bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center relative">
+        <div className="text-center">
+          <div className="loading-spinner w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full mx-auto mb-3"></div>
+          <div className="text-gray-600 font-medium">Loading map...</div>
+          <div className="text-xs text-gray-400 mt-1">Please wait</div>
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"></div>
       </div>
     )
   }

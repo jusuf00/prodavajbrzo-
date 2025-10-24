@@ -46,7 +46,7 @@ export function ListingCard({ listing, isActive, distance }: ListingCardProps) {
             <p className="text-gray-600 mb-2 line-clamp-2">{listing.description}</p>
             <div className="flex justify-between items-center">
               <span className="text-2xl font-bold text-orange-600">
-                {listing.price % 1 === 0 ? listing.price.toFixed(0) : listing.price.toFixed(2)} MKD
+                {listing.price % 1 === 0 ? listing.price.toFixed(0) : listing.price.toFixed(2)} ден
               </span>
               <span className="text-sm text-gray-500">
                 {listing.category?.name}
@@ -60,9 +60,9 @@ export function ListingCard({ listing, isActive, distance }: ListingCardProps) {
               </span>
             </div>
             {listing.location_address && (
-              <div className="mt-2 flex items-center text-sm text-gray-500">
-                <MapPin className="h-3 w-3 mr-1" />
-                <span className="truncate">{listing.location_address}</span>
+              <div className="mt-2 flex items-center text-sm text-gray-600 bg-gray-50 px-2 py-1 rounded-md border border-gray-200">
+                <MapPin className="h-4 w-4 mr-2 text-orange-500 flex-shrink-0" />
+                <span className="truncate font-medium">{listing.location_address}</span>
               </div>
             )}
           </CardContent>

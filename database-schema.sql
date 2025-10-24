@@ -290,6 +290,10 @@ DROP POLICY IF EXISTS "Users can create conversations" ON conversations;
 CREATE POLICY "Users can create conversations" ON conversations
   FOR INSERT WITH CHECK (buyer_id = auth.uid() OR seller_id = auth.uid());
 
+DROP POLICY IF EXISTS "Users can delete their own conversations" ON conversations;
+CREATE POLICY "Users can delete their own conversations" ON conversations
+  FOR DELETE USING (buyer_id = auth.uid() OR seller_id = auth.uid());
+
 -- RLS Policies for messages
 DROP POLICY IF EXISTS "Users can view messages in their conversations" ON messages;
 CREATE POLICY "Users can view messages in their conversations" ON messages
@@ -303,6 +307,14 @@ DROP POLICY IF EXISTS "Users can insert messages in their conversations" ON mess
 CREATE POLICY "Users can insert messages in their conversations" ON messages
   FOR INSERT WITH CHECK (
     sender_id = auth.uid() AND
+    conversation_id IN (
+      SELECT id FROM conversations WHERE buyer_id = auth.uid() OR seller_id = auth.uid()
+    )
+  );
+
+DROP POLICY IF EXISTS "Users can delete messages in their conversations" ON messages;
+CREATE POLICY "Users can delete messages in their conversations" ON messages
+  FOR DELETE USING (
     conversation_id IN (
       SELECT id FROM conversations WHERE buyer_id = auth.uid() OR seller_id = auth.uid()
     )

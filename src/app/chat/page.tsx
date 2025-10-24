@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { ArrowLeft, MessageCircle, Mail, Send } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
+import { ArrowLeft, MessageCircle, Mail, Send, Trash2, CheckSquare, Square, Pencil } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { toast } from 'sonner'
@@ -55,17 +56,19 @@ type Conversation = {
 import { getConversationsWithLatestMessage, getUnreadMessageCount, markConversationRead, getConversationMessages, sendMessage } from '@/lib/api'
 
 function ChatContent() {
-  const { user } = useAuth()
-  const queryClient = useQueryClient()
-  const searchParams = useSearchParams()
-  const conversationId = searchParams.get('conversation')
-  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
-  const [messages, setMessages] = useState<Message[]>([])
-  const [newMessage, setNewMessage] = useState('')
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-  const [view, setView] = useState<'conversations' | 'chat'>('conversations')
+   const { user, loading: authLoading } = useAuth()
+   const queryClient = useQueryClient()
+   const searchParams = useSearchParams()
+   const conversationId = searchParams.get('conversation')
+   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
+   const [messages, setMessages] = useState<Message[]>([])
+   const [newMessage, setNewMessage] = useState('')
+   const messagesEndRef = useRef<HTMLDivElement>(null)
+   const [view, setView] = useState<'conversations' | 'chat'>('conversations')
+   const [selectedConversations, setSelectedConversations] = useState<Set<string>>(new Set())
+   const [isSelectionMode, setIsSelectionMode] = useState(false)
 
-  const { data: conversations, isLoading, error } = useQuery({
+  const { data: conversations, isLoading, error, refetch } = useQuery({
     queryKey: ['user-conversations', user?.id],
     queryFn: () => getConversationsWithLatestMessage(user!.id),
     enabled: !!user,
@@ -105,25 +108,27 @@ function ChatContent() {
   })
 
   const sendMessageMutation = useMutation({
-    mutationFn: (content: string) => sendMessage(selectedConversation!.id, user!.id, content),
-    onSuccess: (newMessage) => {
-      setNewMessage('')
-      // Add the new message to the local state immediately
-      setMessages(prev => [...prev, newMessage])
-      // Auto-scroll to the latest message when sending
-      setTimeout(() => {
-        messagesEndRef.current?.scrollTo({
-          top: messagesEndRef.current.scrollHeight,
-          behavior: 'smooth'
-        })
-      }, 100)
-      queryClient.invalidateQueries({ queryKey: ['user-conversations', user?.id] })
-      queryClient.invalidateQueries({ queryKey: ['unread-messages', user?.id] })
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to send message')
-    },
-  })
+   mutationFn: (content: string) => sendMessage(selectedConversation!.id, user!.id, content),
+   onSuccess: (newMessage) => {
+     setNewMessage('')
+     // Add the new message to the local state immediately
+     setMessages(prev => [...prev, newMessage])
+     // Auto-scroll to the latest message when sending
+     setTimeout(() => {
+       messagesEndRef.current?.scrollTo({
+         top: messagesEndRef.current.scrollHeight,
+         behavior: 'smooth'
+       })
+     }, 100)
+     // Update conversation list to show the latest message
+     queryClient.invalidateQueries({ queryKey: ['user-conversations', user?.id] })
+     // Update unread count
+     queryClient.invalidateQueries({ queryKey: ['unread-messages', user?.id] })
+   },
+   onError: (error: Error) => {
+     toast.error(error.message || 'Failed to send message')
+   },
+ })
 
   useEffect(() => {
     if (conversationMessages) {
@@ -146,6 +151,7 @@ function ChatContent() {
       if (conversation) {
         console.log('Found conversation, selecting:', conversation)
         setSelectedConversation(conversation)
+        setView('chat') // Switch to chat view
         // Mark messages as read when auto-selecting
         markReadMutation.mutate(conversation.id)
       } else {
@@ -186,9 +192,11 @@ function ChatContent() {
         }, (payload) => {
           const newMessage = payload.new as Message
           console.log('New message received:', newMessage)
-          // Always invalidate queries when a new message is inserted
-          // The queries will handle filtering on their own
-          queryClient.invalidateQueries({ queryKey: ['user-conversations', user.id] })
+          // Only invalidate conversations query if the message is from someone else
+          // This prevents showing unread badges for our own messages
+          if (newMessage.sender_id !== user.id) {
+            queryClient.invalidateQueries({ queryKey: ['user-conversations', user.id] })
+          }
           queryClient.invalidateQueries({ queryKey: ['unread-messages', user.id] })
         })
         .subscribe()
@@ -202,12 +210,158 @@ function ChatContent() {
   // Removed auto-scroll functionality
 
   const handleSelectConversation = (conversation: Conversation) => {
-    setSelectedConversation(conversation)
-    setView('chat')
+    if (isSelectionMode) {
+      // Toggle selection
+      setSelectedConversations(prev => {
+        const newSet = new Set(prev)
+        if (newSet.has(conversation.id)) {
+          newSet.delete(conversation.id)
+        } else {
+          newSet.add(conversation.id)
+        }
+        return newSet
+      })
+    } else {
+      setSelectedConversation(conversation)
+      setView('chat')
 
-    // Mark all messages in conversation as read when selecting
-    console.log('Selecting conversation:', conversation.id)
-    markReadMutation.mutate(conversation.id)
+      // Mark all messages in conversation as read when selecting
+      console.log('Selecting conversation:', conversation.id)
+      markReadMutation.mutate(conversation.id)
+    }
+  }
+
+  const handleSelectAll = () => {
+    if (conversations) {
+      setSelectedConversations(new Set(conversations.map(c => c.id)))
+    }
+  }
+
+  const handleDeselectAll = () => {
+    setSelectedConversations(new Set())
+  }
+
+  const handleDeleteSelected = async () => {
+    if (selectedConversations.size === 0) return
+
+    // Custom styled confirmation dialog (popup style with blurred background)
+    const confirmed = await new Promise<boolean>((resolve) => {
+      // Create backdrop with subtle blur effect
+      const backdrop = document.createElement('div')
+      backdrop.className = 'fixed inset-0 z-40 bg-transparent backdrop-blur-sm'
+
+      const dialog = document.createElement('div')
+      dialog.className = 'fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50'
+      dialog.innerHTML = `
+        <div class="bg-white rounded-lg p-6 max-w-md shadow-2xl border-2 border-red-200 animate-in fade-in-0 zoom-in-95 duration-200">
+          <div class="flex items-center mb-4">
+            <div class="flex-shrink-0 w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+              <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+              </svg>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-lg font-semibold text-gray-900">Delete Conversations</h3>
+            </div>
+          </div>
+          <div class="mb-6">
+            <p class="text-gray-600">
+              Are you sure you want to delete <strong class="text-red-600">${selectedConversations.size} conversation(s)</strong> and all their messages?
+            </p>
+            <p class="text-sm text-gray-500 mt-2">
+              This action <strong>cannot be undone</strong> and will permanently remove all messages from the selected conversations.
+            </p>
+          </div>
+          <div class="flex justify-end space-x-3">
+            <button class="cancel-btn px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300">
+              Cancel
+            </button>
+            <button class="delete-btn px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-300">
+              Delete
+            </button>
+          </div>
+        </div>
+      `
+
+      document.body.appendChild(backdrop)
+      document.body.appendChild(dialog)
+
+      const cancelBtn = dialog.querySelector('.cancel-btn') as HTMLButtonElement
+      const deleteBtn = dialog.querySelector('.delete-btn') as HTMLButtonElement
+
+      const closeDialog = () => {
+        document.body.removeChild(backdrop)
+        document.body.removeChild(dialog)
+        resolve(false)
+      }
+
+      const confirmDelete = () => {
+        document.body.removeChild(backdrop)
+        document.body.removeChild(dialog)
+        resolve(true)
+      }
+
+      cancelBtn.onclick = closeDialog
+      deleteBtn.onclick = confirmDelete
+
+      // Close on backdrop click
+      backdrop.onclick = closeDialog
+
+      // Close on Escape key
+      const handleEscape = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          closeDialog()
+          document.removeEventListener('keydown', handleEscape)
+        }
+      }
+      document.addEventListener('keydown', handleEscape)
+    })
+
+    if (confirmed) {
+      try {
+        // Delete messages first (due to foreign key constraints)
+        console.log('Deleting messages for conversations:', Array.from(selectedConversations))
+        const { error: messagesError, count: messagesDeleted } = await supabase
+          .from('messages')
+          .delete({ count: 'exact' })
+          .in('conversation_id', Array.from(selectedConversations))
+
+        if (messagesError) {
+          console.error('Messages deletion error:', messagesError)
+          throw messagesError
+        }
+        console.log(`Messages deleted successfully: ${messagesDeleted} messages`)
+
+        // Then delete conversations
+        console.log('Deleting conversations:', Array.from(selectedConversations))
+        const { error: conversationsError, count: conversationsDeleted } = await supabase
+          .from('conversations')
+          .delete({ count: 'exact' })
+          .in('id', Array.from(selectedConversations))
+
+        if (conversationsError) {
+          console.error('Conversations deletion error:', conversationsError)
+          throw conversationsError
+        }
+        console.log(`Conversations deleted successfully: ${conversationsDeleted} conversations`)
+
+        // Update local state
+        queryClient.invalidateQueries({ queryKey: ['user-conversations', user?.id] })
+        queryClient.invalidateQueries({ queryKey: ['unread-messages', user?.id] })
+
+        setSelectedConversations(new Set())
+        setIsSelectionMode(false)
+        toast.success(`${selectedConversations.size} conversation(s) and all messages deleted successfully`)
+      } catch (error) {
+        console.error('Error deleting conversations:', error)
+        toast.error('Failed to delete conversations')
+      }
+    }
+  }
+
+  const toggleSelectionMode = () => {
+    setIsSelectionMode(!isSelectionMode)
+    setSelectedConversations(new Set())
   }
 
   const handleBackToConversations = () => {
@@ -246,6 +400,21 @@ function ChatContent() {
     return defaultImage?.image_url || conversation.listing?.images?.[0]?.image_url
   }
 
+  // Show loading while auth is being restored
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-white">
+        <div className="text-center loading-pulse">
+          <div className="loading-spinner w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-6 shadow-lg"></div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold text-gray-800">Loading Messages</h2>
+            <p className="text-gray-600">Connecting to your conversations...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (!user) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -266,10 +435,7 @@ function ChatContent() {
         <div className="text-center">
           <h1 className="text-3xl font-bold text-gray-900 flex items-center justify-center gap-3">
             <Mail className="h-8 w-8" />
-            Messages
-            <Badge variant={unreadCount && unreadCount > 0 ? "destructive" : "secondary"} className="text-sm ml-4">
-              {unreadCount || 0} unread
-            </Badge>
+            Conversations
           </h1>
           <p className="text-gray-600 mt-2">Manage your conversations with buyers and sellers</p>
         </div>
@@ -280,12 +446,69 @@ function ChatContent() {
         <div className="max-w-4xl mx-auto">
           <Card className="h-fit overflow-hidden">
             <CardContent className="p-6">
-              <h3 className="font-semibold text-gray-900 mb-6 flex-shrink-0 text-xl">Conversations</h3>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="font-semibold text-gray-900 text-xl">Conversations</h3>
+                <div className="flex items-center gap-2">
+                  {isSelectionMode ? (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={toggleSelectionMode}
+                        className="text-xs"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleSelectAll}
+                        className="text-xs"
+                      >
+                        <CheckSquare className="h-4 w-4 mr-1" />
+                        Select All
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleDeselectAll}
+                        className="text-xs"
+                      >
+                        <Square className="h-4 w-4 mr-1" />
+                        Deselect All
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleDeleteSelected}
+                        disabled={selectedConversations.size === 0}
+                        className="text-xs"
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete ({selectedConversations.size})
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={toggleSelectionMode}
+                      className="text-xs"
+                    >
+                      <Pencil className="h-4 w-4 mr-1" />
+                      Edit
+                    </Button>
+                  )}
+                </div>
+              </div>
 
               {isLoading ? (
-                <div className="text-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto mb-4"></div>
-                  <p className="text-sm text-gray-500">Loading conversations...</p>
+                <div className="text-center py-12 loading-pulse">
+                  <div className="loading-spinner w-10 h-10 border-3 border-blue-500 border-t-transparent rounded-full mx-auto mb-4 shadow-sm"></div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-gray-700">Loading conversations...</p>
+                    <p className="text-xs text-gray-500">Fetching your messages</p>
+                  </div>
                 </div>
               ) : error ? (
                 <div className="text-center py-12">
@@ -293,7 +516,7 @@ function ChatContent() {
                   <p className="text-xs text-gray-400">Check console for details</p>
                 </div>
               ) : conversations && Array.isArray(conversations) && conversations.length > 0 ? (
-                <div className="space-y-3">
+                <div className="space-y-3 max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                   {conversations.map((conversation: Conversation) => {
                     const otherParticipant = getOtherParticipant(conversation)
                     const listingImage = getListingImage(conversation)
@@ -302,15 +525,38 @@ function ChatContent() {
                     return (
                       <div
                         key={conversation.id}
-                        className={`p-4 rounded-lg cursor-pointer transition-all hover:bg-gray-50 border-l-4 ${
-                          isUnread ? 'bg-blue-50 border-blue-400' : 'bg-white border-transparent'
-                        }`}
+                        className={`p-4 rounded-lg cursor-pointer transition-all hover:bg-gray-50 hover:shadow-md border ${
+                          isUnread
+                            ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300 shadow-sm ring-1 ring-blue-200'
+                            : 'bg-white border-gray-200 hover:border-gray-300'
+                        } ${isSelectionMode ? 'hover:bg-gray-100' : ''}`}
                         onClick={() => handleSelectConversation(conversation)}
                       >
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-start gap-4 relative">
+                          {/* Selection Checkbox */}
+                          {isSelectionMode && (
+                            <div className="flex items-center pt-1">
+                              <Checkbox
+                                checked={selectedConversations.has(conversation.id)}
+                                onCheckedChange={(checked) => {
+                                  setSelectedConversations(prev => {
+                                    const newSet = new Set(prev)
+                                    if (checked) {
+                                      newSet.add(conversation.id)
+                                    } else {
+                                      newSet.delete(conversation.id)
+                                    }
+                                    return newSet
+                                  })
+                                }}
+                                className="mt-1"
+                              />
+                            </div>
+                          )}
+
                           {/* Listing Image */}
                           {listingImage ? (
-                            <div className="w-12 h-12 relative rounded-lg overflow-hidden flex-shrink-0">
+                            <div className="w-14 h-14 relative rounded-lg overflow-hidden flex-shrink-0">
                               <Image
                                 src={listingImage}
                                 alt={conversation.listing?.title || 'Listing'}
@@ -319,20 +565,27 @@ function ChatContent() {
                               />
                             </div>
                           ) : (
-                            <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
-                              <MessageCircle className="h-6 w-6 text-gray-500" />
+                            <div className="w-14 h-14 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <MessageCircle className="h-7 w-7 text-gray-500" />
                             </div>
                           )}
 
                           {/* Conversation Info */}
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between mb-1">
-                              <p className={`text-base font-medium truncate ${
-                                isUnread ? 'text-gray-900 font-semibold' : 'text-gray-700'
-                              }`}>
-                                {otherParticipant?.display_name || 'Unknown User'}
-                              </p>
-                              <div className="flex items-center gap-2 flex-shrink-0">
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex-1 min-w-0">
+                                <p className={`text-base font-medium truncate ${
+                                  isUnread ? 'text-gray-900 font-semibold' : 'text-gray-700'
+                                }`}>
+                                  {otherParticipant?.display_name || 'Unknown User'}
+                                </p>
+                                <p className={`text-sm truncate mt-1 ${
+                                  isUnread ? 'text-gray-600' : 'text-gray-500'
+                                }`}>
+                                  {conversation.listing?.title || 'Unknown Listing'}
+                                </p>
+                              </div>
+                              <div className="flex flex-col items-end gap-1 flex-shrink-0 ml-3">
                                 {conversation.latest_message && (
                                   <span className={`text-xs ${
                                     isUnread ? 'text-blue-600 font-medium' : 'text-gray-500'
@@ -340,29 +593,22 @@ function ChatContent() {
                                     {formatTime(conversation.latest_message.created_at)}
                                   </span>
                                 )}
-                                {isUnread && (
-                                  <>
-                                    <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                                    <span className="text-xs text-orange-600 font-medium">New</span>
-                                  </>
+                                {/* Unread Badge */}
+                                {conversation.unread_count && conversation.unread_count > 0 && (
+                                  <Badge variant="destructive" className="text-xs px-2 py-0.5 min-w-[20px] h-5 flex items-center justify-center">
+                                    {conversation.unread_count}
+                                  </Badge>
                                 )}
                               </div>
                             </div>
 
-                            {/* Listing Title */}
-                            <p className={`text-sm truncate mb-2 ${
-                              isUnread ? 'text-gray-600' : 'text-gray-500'
-                            }`}>
-                              {conversation.listing?.title || 'Unknown Listing'}
-                            </p>
-
                             {/* Latest Message Preview */}
                             {conversation.latest_message ? (
-                              <p className={`text-sm truncate ${
-                                isUnread ? 'font-semibold text-gray-900' : 'text-gray-600'
+                              <p className={`text-sm line-clamp-2 ${
+                                isUnread ? 'font-medium text-gray-900' : 'text-gray-600'
                               }`}>
-                                {conversation.latest_message.content.length > 80
-                                  ? `${conversation.latest_message.content.substring(0, 80)}...`
+                                {conversation.latest_message.content.length > 100
+                                  ? `${conversation.latest_message.content.substring(0, 100)}...`
                                   : conversation.latest_message.content
                                 }
                               </p>
@@ -422,7 +668,7 @@ function ChatContent() {
                 </div>
                 {selectedConversation!.listing?.price && (
                   <Badge variant="outline" className="ml-auto">
-                    {selectedConversation!.listing.price} MKD
+                    {selectedConversation!.listing.price} ден
                   </Badge>
                 )}
               </div>

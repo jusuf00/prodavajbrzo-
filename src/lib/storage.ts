@@ -1,5 +1,73 @@
 import { supabase } from './supabase'
 
+// Location utilities
+export interface UserLocation {
+  latitude: number
+  longitude: number
+  timestamp: number
+}
+
+export function requestLocationPermission(): Promise<UserLocation> {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error('Geolocation is not supported by this browser'))
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const location: UserLocation = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          timestamp: Date.now()
+        }
+        // Store in localStorage
+        localStorage.setItem('userLocation', JSON.stringify(location))
+        resolve(location)
+      },
+      (error) => {
+        reject(error)
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000 // 5 minutes
+      }
+    )
+  })
+}
+
+export function getStoredLocation(): UserLocation | null {
+  try {
+    const stored = localStorage.getItem('userLocation')
+    if (stored) {
+      const location = JSON.parse(stored)
+      // Check if location is still fresh (within 1 hour)
+      if (Date.now() - location.timestamp < 3600000) {
+        return location
+      } else {
+        localStorage.removeItem('userLocation')
+        return null
+      }
+    }
+  } catch (error) {
+    console.error('Error reading stored location:', error)
+  }
+  return null
+}
+
+export function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371 // Earth's radius in kilometers
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLon = (lon2 - lon1) * Math.PI / 180
+  const a =
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon/2) * Math.sin(dLon/2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+  return R * c
+}
+
 export async function uploadListingImage(file: File, listingId: string): Promise<string> {
   try {
     const fileExt = file.name.split('.').pop()

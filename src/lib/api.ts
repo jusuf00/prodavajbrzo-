@@ -435,6 +435,7 @@ export async function getConversationsWithLatestMessage(userId: string) {
       .select('conversation_id, content, created_at, sender_id, is_read')
       .in('conversation_id', conversationIds)
       .order('created_at', { ascending: false })
+      .limit(1)
 
     if (msgError) throw msgError
 
@@ -453,13 +454,27 @@ export async function getConversationsWithLatestMessage(userId: string) {
     const latestMessages: { [key: string]: any } = {}
     const unreadCounts: { [key: string]: number } = {}
 
+    // Get all messages for unread count calculation
+    const { data: allMessages, error: allMsgError } = await supabase
+      .from('messages')
+      .select('conversation_id, sender_id, is_read')
+      .in('conversation_id', conversationIds)
+
+    if (allMsgError) {
+      console.error('Error fetching all messages for unread count:', allMsgError)
+    }
+
+    // Calculate unread counts
+    allMessages?.forEach(msg => {
+      if (!msg.is_read && msg.sender_id !== userId) {
+        unreadCounts[msg.conversation_id] = (unreadCounts[msg.conversation_id] || 0) + 1
+      }
+    })
+
+    // Set latest messages
     messages?.forEach(msg => {
       if (!latestMessages[msg.conversation_id]) {
         latestMessages[msg.conversation_id] = msg
-      }
-      // Only count as unread if the message is not from the current user AND not read
-      if (!msg.is_read && msg.sender_id !== userId) {
-        unreadCounts[msg.conversation_id] = (unreadCounts[msg.conversation_id] || 0) + 1
       }
     })
 

@@ -7,18 +7,22 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useState, useEffect } from 'react'
-import { Search, Package, Plus, ArrowRight, ArrowUp, Grid3X3 } from 'lucide-react'
+import { Search, Package, Plus, ArrowRight, ArrowUp, Grid3X3, MapPin } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/lib/providers'
 import { calculateDistance } from '@/lib/utils'
+import { ListingsGridSkeleton } from '@/components/ListingCardSkeleton'
+import { requestLocationPermission, getStoredLocation, UserLocation } from '@/lib/storage'
+import { toast } from 'sonner'
 
 export default function HomePage() {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('all')
   const [showScrollTop, setShowScrollTop] = useState(false)
   const [showCategories, setShowCategories] = useState(false)
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
+  const [locationRequested, setLocationRequested] = useState(false)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -29,21 +33,80 @@ export default function HomePage() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
+  // Close categories dropdown when clicking outside
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          })
-        },
-        (error) => {
-          console.error('Error getting location:', error)
-        }
-      )
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element
+      if (!target.closest('.categories-dropdown')) {
+        setShowCategories(false)
+      }
     }
-  }, [])
+
+    if (showCategories) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showCategories])
+
+  useEffect(() => {
+    // Check for stored location first
+    const storedLocation = getStoredLocation()
+    if (storedLocation) {
+      setUserLocation({
+        lat: storedLocation.latitude,
+        lng: storedLocation.longitude,
+      })
+      setLocationRequested(true)
+    } else if (!locationRequested) {
+      // Request location permission with user-friendly prompt
+      const requestLocation = async () => {
+        try {
+          const location = await requestLocationPermission()
+          setUserLocation({
+            lat: location.latitude,
+            lng: location.longitude,
+          })
+          toast.success('Location enabled! You can now see distances to listings.', {
+            duration: 4000,
+          })
+        } catch (error) {
+          console.error('Location permission denied or error:', error)
+          toast.error('Location access denied. You can still browse listings, but distance information won\'t be available.', {
+            duration: 6000,
+            action: {
+              label: 'Try Again',
+              onClick: () => {
+                setLocationRequested(false)
+                setTimeout(() => window.location.reload(), 100)
+              },
+            },
+          })
+        } finally {
+          setLocationRequested(true)
+        }
+      }
+
+      // Show initial prompt after a short delay
+      const timer = setTimeout(() => {
+        toast('Enable location to see distances to listings?', {
+          duration: 8000,
+          action: {
+            label: 'Enable',
+            onClick: requestLocation,
+          },
+          cancel: {
+            label: 'No thanks',
+            onClick: () => setLocationRequested(true),
+          },
+        })
+      }, 2000)
+
+      return () => clearTimeout(timer)
+    }
+  }, [locationRequested])
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -52,6 +115,7 @@ export default function HomePage() {
   const { data: listings, isLoading, error } = useQuery({
     queryKey: ['listings-home'],
     queryFn: () => getListings(),
+    enabled: !authLoading, // Wait for auth to load
     retry: 1,
     staleTime: 5 * 60 * 1000, // 5 minutes
   })
@@ -71,10 +135,31 @@ export default function HomePage() {
     window.location.href = `/listings${params.toString() ? `?${params.toString()}` : ''}`
   }
 
+  // Show loading while auth is being restored
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-white">
+        <div className="text-center loading-pulse">
+          <div className="loading-spinner w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full mx-auto mb-6 shadow-lg"></div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold text-gray-800">Welcome to ProdavajBrzo</h2>
+            <p className="text-gray-600">Setting up your experience...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center">Loading listings...</div>
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">Latest Listings</h2>
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            Discover the newest products added by our community of sellers
+          </p>
+        </div>
+        <ListingsGridSkeleton count={8} />
       </div>
     )
   }
@@ -125,7 +210,7 @@ export default function HomePage() {
                 />
               </div>
               {/* Style 4: Grid-based Category Cards */}
-              <div className="relative">
+              <div className="relative categories-dropdown">
                 <Button
                   type="button"
                   variant="outline"

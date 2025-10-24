@@ -69,9 +69,12 @@ export default function ListingDetailPage() {
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto mb-4"></div>
-          <p>Loading listing...</p>
+        <div className="text-center loading-pulse">
+          <div className="loading-spinner w-12 h-12 border-3 border-orange-500 border-t-transparent rounded-full mx-auto mb-4 shadow-md"></div>
+          <div className="space-y-1">
+            <p className="text-lg font-medium text-gray-800">Loading listing...</p>
+            <p className="text-sm text-gray-500">Please wait</p>
+          </div>
         </div>
       </div>
     )
@@ -113,7 +116,7 @@ export default function ListingDetailPage() {
             <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-3">{listing.title}</h1>
             <div className="flex flex-wrap items-center gap-4 mb-3">
               <div className="text-3xl lg:text-4xl font-bold text-orange-600">
-                {listing.price % 1 === 0 ? listing.price.toFixed(0) : listing.price.toFixed(2)} MKD
+                {listing.price % 1 === 0 ? listing.price.toFixed(0) : listing.price.toFixed(2)} ден
               </div>
               <Badge variant="secondary" className="px-3 py-1 text-sm">
                 {listing.category?.name}

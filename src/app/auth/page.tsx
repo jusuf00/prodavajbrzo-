@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
@@ -15,10 +15,44 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [messageType, setMessageType] = useState<'success' | 'error'>('success')
+  const [lastSentTime, setLastSentTime] = useState<number | null>(null)
+  const [countdown, setCountdown] = useState<number>(0)
   const router = useRouter()
+
+  // Countdown timer effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout
+
+    if (lastSentTime && countdown > 0) {
+      interval = setInterval(() => {
+        const now = Date.now()
+        const remaining = Math.max(0, Math.ceil((60000 - (now - lastSentTime)) / 1000))
+        setCountdown(remaining)
+
+        if (remaining === 0) {
+          setLastSentTime(null)
+        }
+      }, 1000)
+    }
+
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [lastSentTime, countdown])
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Check if user recently requested a magic link (within last 60 seconds)
+    const now = Date.now()
+    if (lastSentTime && (now - lastSentTime) < 60000) {
+      const remainingSeconds = Math.ceil((60000 - (now - lastSentTime)) / 1000)
+      toast.error(`Please wait ${remainingSeconds} seconds before requesting another magic link.`, {
+        duration: 4000,
+      })
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -74,7 +108,11 @@ export default function AuthPage() {
       if (error) {
         toast.error(error.message)
       } else {
-        toast.success('Check your email to complete sign-in')
+        setLastSentTime(now)
+        setCountdown(60)
+        toast.success('Check your email to complete sign-in.', {
+          duration: 4000,
+        })
       }
     } catch (error) {
       toast.error('An unexpected error occurred')
@@ -107,11 +145,13 @@ export default function AuthPage() {
             </div>
             <Button
               type="submit"
-              className="w-full bg-orange-600 hover:bg-orange-700"
-              disabled={loading}
+              className={`w-full ${countdown > 0 ? 'bg-gray-400 cursor-not-allowed' : 'bg-orange-600 hover:bg-orange-700'}`}
+              disabled={loading || countdown > 0}
             >
               {loading ? (
                 'Sending...'
+              ) : countdown > 0 ? (
+                `Try again in ${countdown}s`
               ) : (
                 <>
                   <Mail className="mr-2 h-4 w-4" />

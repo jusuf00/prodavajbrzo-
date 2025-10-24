@@ -11,10 +11,13 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { Search, X } from 'lucide-react'
 import { Suspense } from 'react'
+import { useAuth } from '@/lib/providers'
+import { ListingsGridSkeleton } from '@/components/ListingCardSkeleton'
 
 function ListingsContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
+  const { loading: authLoading } = useAuth()
   const [search, setSearch] = useState(searchParams.get('q') || '')
   const [category, setCategory] = useState(searchParams.get('category') || 'all')
 
@@ -32,7 +35,7 @@ function ListingsContent() {
     retry: 3,
     retryDelay: 1000,
     staleTime: 2 * 60 * 1000, // 2 minutes
-    enabled: true, // Always fetch listings
+    enabled: !authLoading, // Wait for auth to load
   })
 
   const { data: categories } = useQuery({
@@ -55,13 +58,39 @@ function ListingsContent() {
     setCategory('all')
   }
 
+  // Show loading while auth is being restored
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto mb-4"></div>
-          <p>Loading listings...</p>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-4">Browse Listings</h1>
+          <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
+            <div className="flex gap-4 flex-wrap items-end">
+              <div className="flex-1 min-w-64">
+                <div className="h-4 bg-gray-200 rounded mb-2 w-32"></div>
+                <div className="h-10 bg-gray-200 rounded"></div>
+              </div>
+              <div className="min-w-48">
+                <div className="h-4 bg-gray-200 rounded mb-2 w-24"></div>
+                <div className="h-10 bg-gray-200 rounded"></div>
+              </div>
+              <div className="h-10 bg-gray-200 rounded w-24"></div>
+            </div>
+          </div>
+          <div className="mb-4 h-4 bg-gray-200 rounded w-48"></div>
         </div>
+        <ListingsGridSkeleton />
       </div>
     )
   }

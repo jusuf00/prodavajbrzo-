@@ -246,7 +246,7 @@ export default function NewListingPage() {
                     required
                   />
                   <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
-                    MKD
+                    ден
                   </span>
                 </div>
               </div>
@@ -288,7 +288,7 @@ export default function NewListingPage() {
                   >
                     {isUploading ? (
                       <>
-                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                        <div className="loading-spinner mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
                         Uploading...
                       </>
                     ) : (

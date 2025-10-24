@@ -2,27 +2,44 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/lib/providers'
-import { getUserListings, deleteListing, getCategories, markListingAsSold } from '@/lib/api'
+import { getUserListings, deleteListing, getCategories, markListingAsSold, getUserProfile } from '@/lib/api'
 import { ListingCard } from '@/components/ListingCard'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Plus, BarChart3, Package, TrendingUp } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useEffect, Suspense } from 'react'
 
-export default function DashboardPage() {
-  const { user, loading } = useAuth()
+function DashboardContent() {
+  const { user, loading: authLoading } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const queryClient = useQueryClient()
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push('/auth')
+    if (!authLoading && !user) {
+      // Check if this is an invalid/expired magic link attempt
+      const error = searchParams.get('error')
+      const errorDescription = searchParams.get('error_description')
+
+      if (error === 'access_denied' || errorDescription?.includes('expired') || errorDescription?.includes('invalid')) {
+        toast.error('This sign-in link has expired or is invalid. Please request a new magic link.', {
+          duration: 6000,
+          action: {
+            label: 'Go to Sign In',
+            onClick: () => router.push('/auth'),
+          },
+        })
+        // Delay redirect to allow user to see the message
+        setTimeout(() => router.push('/auth'), 1000)
+      } else {
+        router.push('/auth')
+      }
     }
-  }, [user, loading, router])
+  }, [user, authLoading, router, searchParams])
 
   const { data: listings, isLoading } = useQuery({
     queryKey: ['user-listings', user?.id],
@@ -34,6 +51,12 @@ export default function DashboardPage() {
   const { data: categories } = useQuery({
     queryKey: ['categories'],
     queryFn: getCategories,
+  })
+
+  const { data: userProfile } = useQuery({
+    queryKey: ['user-profile', user?.id],
+    queryFn: () => getUserProfile(user!.id),
+    enabled: !!user,
   })
 
 
@@ -65,10 +88,17 @@ export default function DashboardPage() {
     }
   }
 
-  if (loading) {
+  // Show loading while auth is being restored
+  if (authLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-white">
+        <div className="text-center loading-pulse">
+          <div className="loading-spinner w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full mx-auto mb-6 shadow-lg"></div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold text-gray-800">Loading Dashboard</h2>
+            <p className="text-gray-600">Preparing your listings...</p>
+          </div>
+        </div>
       </div>
     )
   }
@@ -84,11 +114,12 @@ export default function DashboardPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
-        <p className="text-gray-600">Welcome back, {user?.email?.split('@')[0] || 'User'}! Manage your listings and view statistics</p>
+        <p className="text-xl font-semibold text-gray-900 mb-2">Welcome, {userProfile?.display_name || user?.email?.split('@')[0] || 'User'}!</p>
+        <p className="text-gray-600">Manage your listings and view statistics</p>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Listings</CardTitle>
@@ -132,11 +163,11 @@ export default function DashboardPage() {
         {activeListings.length > 0 && (
           <div>
             <h2 className="text-2xl font-semibold mb-4">Active Listings</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {activeListings.map((listing) => (
-                <div key={listing.id} className="relative">
+                <div key={listing.id} className="flex flex-col md:relative">
                   <ListingCard listing={listing} isActive={true} />
-                  <div className="absolute top-2 right-2 flex gap-2">
+                  <div className="flex gap-2 justify-end md:absolute md:top-2 md:right-2 md:justify-start mt-2 md:mt-0">
                     {listing.is_sold && (
                       <Badge variant="secondary" className="bg-red-100 text-red-800 mr-2">
                         SOLD
@@ -174,9 +205,9 @@ export default function DashboardPage() {
             <h2 className="text-2xl font-semibold mb-4">Sold Listings</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {soldListings.map((listing) => (
-                <div key={listing.id} className="relative">
+                <div key={listing.id} className="flex flex-col md:relative">
                   <ListingCard listing={listing} isActive={false} />
-                  <div className="absolute top-2 right-2 flex gap-2">
+                  <div className="flex gap-2 justify-end md:absolute md:top-2 md:right-2 md:justify-start mt-2 md:mt-0">
                     <Badge variant="secondary" className="bg-red-100 text-red-800 mr-2">
                       SOLD
                     </Badge>
@@ -213,5 +244,23 @@ export default function DashboardPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-white">
+        <div className="text-center loading-pulse">
+          <div className="loading-spinner w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full mx-auto mb-6 shadow-lg"></div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold text-gray-800">Loading Dashboard</h2>
+            <p className="text-gray-600">Preparing your listings...</p>
+          </div>
+        </div>
+      </div>
+    }>
+      <DashboardContent />
+    </Suspense>
   )
 }

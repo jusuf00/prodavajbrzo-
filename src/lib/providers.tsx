@@ -16,9 +16,12 @@ const queryClient = new QueryClient({
       retryDelay: 1000,
       refetchOnWindowFocus: false,
       refetchOnReconnect: true,
+      // Add network mode to prevent hanging
+      networkMode: 'online',
     },
     mutations: {
       retry: false,
+      networkMode: 'online',
     },
   },
 })
@@ -47,7 +50,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         if (mounted) {
           setUser(session?.user ?? null)
-          setLoading(false)
+          // Add a small delay to prevent loading flicker
+          setTimeout(() => {
+            if (mounted) setLoading(false)
+          }, 500)
         }
       } catch (error) {
         console.error('Error getting session:', error)
@@ -64,7 +70,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('Auth state changed:', event, session?.user?.id)
         if (mounted) {
           setUser(session?.user ?? null)
-          setLoading(false)
+          // Only set loading to false after a brief delay to prevent flicker
+          setTimeout(() => {
+            if (mounted) setLoading(false)
+          }, 300)
         }
 
         // Create user profile if new user

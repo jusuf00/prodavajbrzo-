@@ -363,40 +363,41 @@ export type Message = {
 }
 
 export type Conversation = {
-  id: string
-  listing_id: string
-  buyer_id: string
-  seller_id: string
-  created_at: string
-  updated_at: string
-  listing?: {
-    title: string
-    price: number
-    images?: {
-      image_url: string
-      is_default: boolean
-    }[]
-  }
-  buyer?: {
-    display_name: string
-    username: string
-  }
-  seller?: {
-    display_name: string
-    username: string
+   id: string
+   listing_id: string
+   buyer_id: string
+   seller_id: string
+   created_at: string
+   last_message_at: string
+   last_message_text: string
+   listing?: {
+     title: string
+     price: number
+     images?: {
+       image_url: string
+       is_default: boolean
+     }[]
+   }
+   buyer?: {
+     display_name: string
+     username: string
+   }
+   seller?: {
+     display_name: string
+     username: string
+   }
+   latest_message?: Message
+   unread_count?: number
  }
-  latest_message?: Message
-  unread_count?: number
-}
 
 export async function getConversationsWithLatestMessage(userId: string) {
   try {
-    // First get conversations without joins
+    // Get conversations with the new schema
     const { data: conversations, error: convError } = await supabase
       .from('conversations')
       .select('*')
       .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
-      .order('updated_at', { ascending: false })
+      .order('last_message_at', { ascending: false, nullsFirst: false })
 
     if (convError) throw convError
 
@@ -406,16 +407,24 @@ export async function getConversationsWithLatestMessage(userId: string) {
 
     // Get conversation IDs
     const conversationIds = conversations.map(c => c.id)
-    const listingIds = [...new Set(conversations.map(c => c.listing_id))]
+    const listingIds = [...new Set(conversations.map(c => c.listing_id).filter(Boolean))]
 
     // Get listings data separately
-    const { data: listings, error: listingsError } = await supabase
-      .from('listings')
-      .select('id, title, price, images:listing_images(image_url, is_default)')
-      .in('id', listingIds)
+    let listingsMap: Record<string, any> = {}
+    if (listingIds.length > 0) {
+      const { data: listings, error: listingsError } = await supabase
+        .from('listings')
+        .select('id, title, price, images:listing_images(image_url, is_default)')
+        .in('id', listingIds)
 
-    if (listingsError) {
-      console.error('Error fetching listings:', listingsError)
+      if (listingsError) {
+        console.error('Error fetching listings:', listingsError)
+      } else {
+        listingsMap = (listings || []).reduce((acc, listing) => {
+          acc[listing.id] = listing
+          return acc
+        }, {} as Record<string, any>)
+      }
     }
 
     // Get user profiles separately
@@ -429,30 +438,29 @@ export async function getConversationsWithLatestMessage(userId: string) {
       console.error('Error fetching users:', usersError)
     }
 
-    // Get latest message for each conversation
-    const { data: messages, error: msgError } = await supabase
-      .from('messages')
-      .select('conversation_id, content, created_at, sender_id, is_read')
-      .in('conversation_id', conversationIds)
-      .order('created_at', { ascending: false })
-      .limit(1)
-
-    if (msgError) throw msgError
-
-    // Create lookup maps
-    const listingsMap = (listings || []).reduce((acc, listing) => {
-      acc[listing.id] = listing
-      return acc
-    }, {} as Record<string, any>)
-
     const usersMap = (users || []).reduce((acc, user) => {
       acc[user.id] = user
       return acc
     }, {} as Record<string, any>)
 
-    // Group messages by conversation and get latest
-    const latestMessages: { [key: string]: any } = {}
-    const unreadCounts: { [key: string]: number } = {}
+    // Get latest message for each conversation
+    const { data: latestMessages, error: msgError } = await supabase
+      .from('messages')
+      .select('conversation_id, content, created_at, sender_id, is_read')
+      .in('conversation_id', conversationIds)
+      .order('created_at', { ascending: false })
+
+    if (msgError) {
+      console.error('Error fetching latest messages:', msgError)
+    }
+
+    // Group messages by conversation and get the latest one
+    const latestMessagesMap: Record<string, any> = {}
+    latestMessages?.forEach(msg => {
+      if (!latestMessagesMap[msg.conversation_id]) {
+        latestMessagesMap[msg.conversation_id] = msg
+      }
+    })
 
     // Get all messages for unread count calculation
     const { data: allMessages, error: allMsgError } = await supabase
@@ -465,26 +473,20 @@ export async function getConversationsWithLatestMessage(userId: string) {
     }
 
     // Calculate unread counts
+    const unreadCounts: { [key: string]: number } = {}
     allMessages?.forEach(msg => {
       if (!msg.is_read && msg.sender_id !== userId) {
         unreadCounts[msg.conversation_id] = (unreadCounts[msg.conversation_id] || 0) + 1
       }
     })
 
-    // Set latest messages
-    messages?.forEach(msg => {
-      if (!latestMessages[msg.conversation_id]) {
-        latestMessages[msg.conversation_id] = msg
-      }
-    })
-
-    // Combine conversations with latest messages
+    // Combine conversations with data
     const processedConversations = conversations.map(conv => ({
       ...conv,
       listing: listingsMap[conv.listing_id] || null,
       buyer: usersMap[conv.buyer_id] || null,
       seller: usersMap[conv.seller_id] || null,
-      latest_message: latestMessages[conv.id] || null,
+      latest_message: latestMessagesMap[conv.id] || null,
       unread_count: unreadCounts[conv.id] || 0
     }))
 
@@ -497,17 +499,46 @@ export async function getConversationsWithLatestMessage(userId: string) {
 }
 
 export async function getConversationMessages(conversationId: string) {
-  const { data, error } = await supabase
+  console.log('getConversationMessages called with:', conversationId)
+
+  // First get messages
+  const { data: messages, error: messagesError } = await supabase
     .from('messages')
-    .select(`
-      *,
-      sender:user_profiles(display_name, username)
-    `)
+    .select('*')
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: true })
 
-  if (error) throw error
-  return data as Message[]
+  if (messagesError) throw messagesError
+
+  // Then get sender profiles separately
+  if (messages && messages.length > 0) {
+    const senderIds = [...new Set(messages.map(m => m.sender_id))]
+    const { data: senders, error: sendersError } = await supabase
+      .from('user_profiles')
+      .select('id, display_name, username')
+      .in('id', senderIds)
+
+    if (sendersError) {
+      console.error('Error fetching senders:', sendersError)
+    }
+
+    // Merge sender data
+    const sendersMap = (senders || []).reduce((acc, sender) => {
+      acc[sender.id] = sender
+      return acc
+    }, {} as Record<string, any>)
+
+    const messagesWithSenders = messages.map(message => ({
+      ...message,
+      sender: sendersMap[message.sender_id] || null
+    }))
+
+    console.log('getConversationMessages result:', { data: messagesWithSenders.length, error: null })
+    return messagesWithSenders as Message[]
+  }
+
+  console.log('getConversationMessages result:', { data: 0, error: null })
+  return [] as Message[]
 }
 
 export async function sendMessage(conversationId: string, senderId: string, content: string) {
@@ -583,18 +614,26 @@ export async function markConversationRead(conversationId: string, userId: strin
 }
 
 export async function getUnreadMessageCount(userId: string) {
+  // First get conversation IDs where user is involved
+  const { data: conversations, error: convError } = await supabase
+    .from('conversations')
+    .select('id')
+    .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
+
+  if (convError) throw convError
+
+  const conversationIds = conversations?.map(c => c.id) || []
+
+  if (conversationIds.length === 0) {
+    return 0
+  }
+
   const { count, error } = await supabase
     .from('messages')
     .select('*', { count: 'exact', head: true })
     .eq('is_read', false)
     .neq('sender_id', userId)
-    .in('conversation_id', 
-      await supabase
-        .from('conversations')
-        .select('id', { head: true })
-        .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
-        .then(res => res.data?.map(c => c.id) || [])
-    )
+    .in('conversation_id', conversationIds)
 
   if (error) throw error
   return count || 0

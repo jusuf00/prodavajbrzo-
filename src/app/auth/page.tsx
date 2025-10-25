@@ -123,17 +123,17 @@ export default function AuthPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 flex items-center justify-center min-h-[60vh]">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Sign In / Register</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-2xl text-gray-900 dark:text-white">Sign In / Register</CardTitle>
+          <CardDescription className="text-gray-600 dark:text-gray-400">
             Enter your email to receive a magic link for passwordless authentication
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSignIn} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-gray-700 dark:text-gray-300">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -141,11 +141,12 @@ export default function AuthPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
               />
             </div>
             <Button
               type="submit"
-              className={`w-full ${countdown > 0 ? 'bg-gray-400 cursor-not-allowed' : 'bg-orange-600 hover:bg-orange-700'}`}
+              className={`w-full text-white ${countdown > 0 ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed' : 'bg-orange-600 hover:bg-orange-700'}`}
               disabled={loading || countdown > 0}
             >
               {loading ? (
@@ -160,7 +161,7 @@ export default function AuthPage() {
               )}
             </Button>
           </form>
-          <div className="mt-4 text-center text-sm text-gray-600">
+          <div className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
             <p>We'll send you a secure link to sign in instantly.</p>
             <p>No password required!</p>
           </div>

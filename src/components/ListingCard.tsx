@@ -20,7 +20,7 @@ export function ListingCard({ listing, isActive, distance }: ListingCardProps) {
   return (
     <Link href={`/listings/${listing.id}`} className="block h-full">
       <div className="relative group h-full">
-        <Card className={`relative ${isActive ? 'hover:border-orange-500' : ''} bg-white h-full flex flex-col`}>
+        <Card className={`relative ${isActive ? 'hover:border-orange-500' : ''} bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 h-full flex flex-col`}>
           {displayImage && (
             <div className="aspect-video relative overflow-hidden rounded-t-lg">
               <Image
@@ -33,7 +33,7 @@ export function ListingCard({ listing, isActive, distance }: ListingCardProps) {
             </div>
           )}
           <CardHeader className="flex-shrink-0 relative">
-            <CardTitle className="text-lg hover:text-orange-600">
+            <CardTitle className="text-lg hover:text-orange-600 dark:text-white dark:hover:text-orange-400">
               {listing.title}
             </CardTitle>
             {distance && (
@@ -43,16 +43,16 @@ export function ListingCard({ listing, isActive, distance }: ListingCardProps) {
             )}
           </CardHeader>
           <CardContent className="flex-1 flex flex-col justify-between">
-            <p className="text-gray-600 mb-2 line-clamp-2">{listing.description}</p>
+            <p className="text-gray-600 dark:text-gray-200 mb-2 line-clamp-2">{listing.description}</p>
             <div className="flex justify-between items-center">
-              <span className="text-2xl font-bold text-orange-600">
+              <span className="text-2xl font-bold text-orange-600 dark:text-orange-400">
                 {listing.price % 1 === 0 ? listing.price.toFixed(0) : listing.price.toFixed(2)} ден
               </span>
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-gray-500 dark:text-gray-300">
                 {listing.category?.name}
               </span>
             </div>
-            <div className="mt-2 flex items-center justify-between text-sm text-gray-500">
+            <div className="mt-2 flex items-center justify-between text-sm text-gray-500 dark:text-gray-300">
               <span>By {listing.seller?.display_name || listing.seller?.username}</span>
               <span className="flex items-center gap-1">
                 <Clock className="h-3 w-3" />
@@ -60,7 +60,7 @@ export function ListingCard({ listing, isActive, distance }: ListingCardProps) {
               </span>
             </div>
             {listing.location_address && (
-              <div className="mt-2 flex items-center text-sm text-gray-600 bg-gray-50 px-2 py-1 rounded-md border border-gray-200">
+              <div className="mt-2 flex items-center text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 px-2 py-1 rounded-md border border-gray-200 dark:border-gray-600">
                 <MapPin className="h-4 w-4 mr-2 text-orange-500 flex-shrink-0" />
                 <span className="truncate font-medium">{listing.location_address}</span>
               </div>

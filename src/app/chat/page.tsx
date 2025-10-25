@@ -27,31 +27,32 @@ type Message = {
 }
 
 type Conversation = {
-  id: string
-  listing_id: string
-  buyer_id: string
-  seller_id: string
-  created_at: string
-  updated_at: string
- listing?: {
-    title: string
-    price: number
-    images?: {
-      image_url: string
-      is_default: boolean
-    }[]
+   id: string
+   listing_id: string
+   buyer_id: string
+   seller_id: string
+   created_at: string
+   last_message_at: string
+   last_message_text: string
+  listing?: {
+     title: string
+     price: number
+     images?: {
+       image_url: string
+       is_default: boolean
+     }[]
+   }
+  buyer?: {
+     display_name: string
+     username: string
   }
- buyer?: {
-    display_name: string
-    username: string
+   seller?: {
+     display_name: string
+     username: string
+   }
+   latest_message?: Message
+   unread_count?: number
  }
-  seller?: {
-    display_name: string
-    username: string
-  }
-  latest_message?: Message
-  unread_count?: number
-}
 
 import { getConversationsWithLatestMessage, getUnreadMessageCount, markConversationRead, getConversationMessages, sendMessage } from '@/lib/api'
 
@@ -72,8 +73,8 @@ function ChatContent() {
     queryKey: ['user-conversations', user?.id],
     queryFn: () => getConversationsWithLatestMessage(user!.id),
     enabled: !!user,
-    retry: 3,
-    retryDelay: 1000,
+    retry: 1,
+    staleTime: 1000 * 60 * 1, // 1 minute
   })
 
   const { data: unreadCount } = useQuery({
@@ -99,8 +100,11 @@ function ChatContent() {
           conv.id === conversationId ? { ...conv, unread_count: 0 } : conv
         )
       })
-      // Update unread count
-      queryClient.invalidateQueries({ queryKey: ['unread-messages', user?.id] })
+      // Force refetch unread count after successful database update
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['unread-messages', user?.id] })
+        queryClient.invalidateQueries({ queryKey: ['user-conversations', user?.id] })
+      }, 1000)
     },
     onError: (error: Error) => {
       console.error('Mark read mutation error:', error)
@@ -111,15 +115,7 @@ function ChatContent() {
    mutationFn: (content: string) => sendMessage(selectedConversation!.id, user!.id, content),
    onSuccess: (newMessage) => {
      setNewMessage('')
-     // Add the new message to the local state immediately
-     setMessages(prev => [...prev, newMessage])
-     // Auto-scroll to the latest message when sending
-     setTimeout(() => {
-       messagesEndRef.current?.scrollTo({
-         top: messagesEndRef.current.scrollHeight,
-         behavior: 'smooth'
-       })
-     }, 100)
+     // Don't add to local state - let real-time subscription handle it
      // Update conversation list to show the latest message
      queryClient.invalidateQueries({ queryKey: ['user-conversations', user?.id] })
      // Update unread count
@@ -192,6 +188,9 @@ function ChatContent() {
         }, (payload) => {
           const newMessage = payload.new as Message
           console.log('New message received:', newMessage)
+
+          // Always invalidate queries when a new message is inserted
+          // The RLS policies will ensure users only see messages they're allowed to see
           // Only invalidate conversations query if the message is from someone else
           // This prevents showing unread badges for our own messages
           if (newMessage.sender_id !== user.id) {
@@ -403,12 +402,12 @@ function ChatContent() {
   // Show loading while auth is being restored
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-white">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-white dark:from-gray-900 dark:to-gray-800">
         <div className="text-center loading-pulse">
           <div className="loading-spinner w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-6 shadow-lg"></div>
           <div className="space-y-2">
-            <h2 className="text-xl font-semibold text-gray-800">Loading Messages</h2>
-            <p className="text-gray-600">Connecting to your conversations...</p>
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Loading Messages</h2>
+            <p className="text-gray-600 dark:text-gray-300">Connecting to your conversations...</p>
           </div>
         </div>
       </div>
@@ -419,9 +418,9 @@ function ChatContent() {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Please sign in to view messages</h1>
+          <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Please sign in to view messages</h1>
           <Link href="/auth">
-            <Button>Sign In</Button>
+            <Button className="bg-orange-500 hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-700">Sign In</Button>
           </Link>
         </div>
       </div>
@@ -433,21 +432,21 @@ function ChatContent() {
       {/* Header */}
       <div className="mb-6">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center justify-center gap-3">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center justify-center gap-3">
             <Mail className="h-8 w-8" />
             Conversations
           </h1>
-          <p className="text-gray-600 mt-2">Manage your conversations with buyers and sellers</p>
+          <p className="text-gray-600 dark:text-gray-300 mt-2">Manage your conversations with buyers and sellers</p>
         </div>
       </div>
 
       {/* Main Content */}
       {view === 'conversations' ? (
         <div className="max-w-4xl mx-auto">
-          <Card className="h-fit overflow-hidden">
+          <Card className="h-fit overflow-hidden bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-semibold text-gray-900 text-xl">Conversations</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-white text-xl">Conversations</h3>
                 <div className="flex items-center gap-2">
                   {isSelectionMode ? (
                     <>
@@ -506,17 +505,17 @@ function ChatContent() {
                 <div className="text-center py-12 loading-pulse">
                   <div className="loading-spinner w-10 h-10 border-3 border-blue-500 border-t-transparent rounded-full mx-auto mb-4 shadow-sm"></div>
                   <div className="space-y-1">
-                    <p className="text-sm font-medium text-gray-700">Loading conversations...</p>
-                    <p className="text-xs text-gray-500">Fetching your messages</p>
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Loading conversations...</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Fetching your messages</p>
                   </div>
                 </div>
               ) : error ? (
                 <div className="text-center py-12">
-                  <p className="text-sm text-red-500 mb-2">Error loading conversations</p>
-                  <p className="text-xs text-gray-400">Check console for details</p>
+                  <p className="text-sm text-red-500 dark:text-red-400 mb-2">Error loading conversations</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500">Check console for details</p>
                 </div>
               ) : conversations && Array.isArray(conversations) && conversations.length > 0 ? (
-                <div className="space-y-3 max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                <div className="space-y-3 max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-100 dark:scrollbar-track-gray-700">
                   {conversations.map((conversation: Conversation) => {
                     const otherParticipant = getOtherParticipant(conversation)
                     const listingImage = getListingImage(conversation)
@@ -525,11 +524,11 @@ function ChatContent() {
                     return (
                       <div
                         key={conversation.id}
-                        className={`p-4 rounded-lg cursor-pointer transition-all hover:bg-gray-50 hover:shadow-md border ${
+                        className={`p-4 rounded-lg cursor-pointer transition-all hover:bg-gray-50 dark:hover:bg-gray-700 hover:shadow-md border ${
                           isUnread
-                            ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300 shadow-sm ring-1 ring-blue-200'
-                            : 'bg-white border-gray-200 hover:border-gray-300'
-                        } ${isSelectionMode ? 'hover:bg-gray-100' : ''}`}
+                            ? 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-300 dark:border-blue-600 shadow-sm ring-1 ring-blue-200 dark:ring-blue-700'
+                            : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                        } ${isSelectionMode ? 'hover:bg-gray-100 dark:hover:bg-gray-600' : ''}`}
                         onClick={() => handleSelectConversation(conversation)}
                       >
                         <div className="flex items-start gap-4 relative">
@@ -565,8 +564,8 @@ function ChatContent() {
                               />
                             </div>
                           ) : (
-                            <div className="w-14 h-14 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
-                              <MessageCircle className="h-7 w-7 text-gray-500" />
+                            <div className="w-14 h-14 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <MessageCircle className="h-7 w-7 text-gray-500 dark:text-gray-400" />
                             </div>
                           )}
 
@@ -575,12 +574,12 @@ function ChatContent() {
                             <div className="flex items-start justify-between mb-2">
                               <div className="flex-1 min-w-0">
                                 <p className={`text-base font-medium truncate ${
-                                  isUnread ? 'text-gray-900 font-semibold' : 'text-gray-700'
+                                  isUnread ? 'text-gray-900 dark:text-white font-semibold' : 'text-gray-700 dark:text-gray-300'
                                 }`}>
                                   {otherParticipant?.display_name || 'Unknown User'}
                                 </p>
                                 <p className={`text-sm truncate mt-1 ${
-                                  isUnread ? 'text-gray-600' : 'text-gray-500'
+                                  isUnread ? 'text-gray-600 dark:text-gray-400' : 'text-gray-500 dark:text-gray-500'
                                 }`}>
                                   {conversation.listing?.title || 'Unknown Listing'}
                                 </p>
@@ -588,7 +587,7 @@ function ChatContent() {
                               <div className="flex flex-col items-end gap-1 flex-shrink-0 ml-3">
                                 {conversation.latest_message && (
                                   <span className={`text-xs ${
-                                    isUnread ? 'text-blue-600 font-medium' : 'text-gray-500'
+                                    isUnread ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-500 dark:text-gray-400'
                                   }`}>
                                     {formatTime(conversation.latest_message.created_at)}
                                   </span>
@@ -605,7 +604,7 @@ function ChatContent() {
                             {/* Latest Message Preview */}
                             {conversation.latest_message ? (
                               <p className={`text-sm line-clamp-2 ${
-                                isUnread ? 'font-medium text-gray-900' : 'text-gray-600'
+                                isUnread ? 'font-bold text-gray-900 dark:text-white' : 'font-medium text-gray-600 dark:text-gray-300'
                               }`}>
                                 {conversation.latest_message.content.length > 100
                                   ? `${conversation.latest_message.content.substring(0, 100)}...`
@@ -613,7 +612,7 @@ function ChatContent() {
                                 }
                               </p>
                             ) : (
-                              <p className="text-sm text-gray-400 italic">No messages yet</p>
+                              <p className="text-sm text-gray-400 dark:text-gray-500 italic">No messages yet</p>
                             )}
                           </div>
                         </div>
@@ -623,8 +622,8 @@ function ChatContent() {
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <Mail className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-sm text-gray-500">No conversations yet</p>
+                  <Mail className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                  <p className="text-sm text-gray-500 dark:text-gray-400">No conversations yet</p>
                 </div>
               )}
             </CardContent>
@@ -632,15 +631,15 @@ function ChatContent() {
         </div>
       ) : (
         <div className="max-w-4xl mx-auto">
-          <Card className="h-fit flex flex-col">
+          <Card className="h-fit flex flex-col bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             {/* Chat Header */}
-            <div className="p-4 border-b bg-gray-50 flex-shrink-0">
+            <div className="p-4 border-b bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 flex-shrink-0">
               <div className="flex items-center gap-3">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleBackToConversations}
-                  className="p-1"
+                  className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600"
                 >
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
@@ -654,20 +653,20 @@ function ChatContent() {
                     />
                   </div>
                 ) : (
-                  <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <MessageCircle className="h-5 w-5 text-gray-500" />
+                  <div className="w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <MessageCircle className="h-5 w-5 text-gray-500 dark:text-gray-400" />
                   </div>
                 )}
                 <div>
-                  <h3 className="font-semibold text-gray-900">
+                  <h3 className="font-semibold text-gray-900 dark:text-white">
                     {selectedConversation!.listing?.title || 'Unknown Listing'}
                   </h3>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
                     with {getOtherParticipant(selectedConversation!)?.display_name || 'Unknown User'}
                   </p>
                 </div>
                 {selectedConversation!.listing?.price && (
-                  <Badge variant="outline" className="ml-auto">
+                  <Badge variant="outline" className="ml-auto border-gray-300 dark:border-gray-500 text-gray-700 dark:text-gray-300">
                     {selectedConversation!.listing.price} ден
                   </Badge>
                 )}
@@ -675,8 +674,8 @@ function ChatContent() {
             </div>
 
             {/* Messages */}
-            <div className="h-96 overflow-hidden">
-              <div className="h-full p-4 overflow-y-scroll" ref={messagesEndRef}>
+            <div className="h-96 overflow-hidden bg-gray-50 dark:bg-gray-900">
+              <div className="h-full p-4 overflow-y-scroll scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-100 dark:scrollbar-track-gray-700" ref={messagesEndRef}>
                 <div className="space-y-4">
                   {messages.map((message) => (
                     <div
@@ -685,7 +684,7 @@ function ChatContent() {
                     >
                       <div className="flex flex-col max-w-[70%]">
                         {message.sender_id !== user.id && (
-                          <p className="text-xs text-gray-500 mb-1 px-3">
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 px-3">
                             {getOtherParticipant(selectedConversation!)?.display_name || 'Unknown User'}
                           </p>
                         )}
@@ -693,12 +692,12 @@ function ChatContent() {
                           className={`rounded-lg px-3 py-2 ${
                             message.sender_id === user.id
                               ? 'bg-orange-500 text-white'
-                              : 'bg-gray-100 text-gray-900'
+                              : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
                           }`}
                         >
                           <p className="text-sm">{message.content}</p>
                           <p className={`text-xs mt-1 ${
-                            message.sender_id === user.id ? 'text-orange-100' : 'text-gray-500'
+                            message.sender_id === user.id ? 'text-orange-100' : 'text-gray-500 dark:text-gray-400'
                           }`}>
                             {formatTime(message.created_at)}
                           </p>
@@ -711,18 +710,18 @@ function ChatContent() {
             </div>
 
             {/* Message Input */}
-            <div className="p-4 border-t flex-shrink-0">
+            <div className="p-4 border-t border-gray-200 dark:border-gray-600 flex-shrink-0 bg-white dark:bg-gray-800">
               <form onSubmit={handleSendMessage} className="flex gap-2">
                 <Input
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   placeholder="Type your message..."
-                  className="flex-1"
+                  className="flex-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
                 />
                 <Button
                   type="submit"
                   disabled={!newMessage.trim() || sendMessageMutation.isPending}
-                  className="bg-orange-500 hover:bg-orange-600"
+                  className="bg-orange-500 hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-700"
                 >
                   <Send className="h-4 w-4" />
                 </Button>
@@ -737,7 +736,7 @@ function ChatContent() {
 
 export default function ChatPage() {
   return (
-    <Suspense fallback={<div className="container mx-auto px-4 py-8"><div className="text-center">Loading chat...</div></div>}>
+    <Suspense fallback={<div className="container mx-auto px-4 py-8"><div className="text-center text-gray-900 dark:text-white">Loading chat...</div></div>}>
       <ChatContent />
     </Suspense>
   )

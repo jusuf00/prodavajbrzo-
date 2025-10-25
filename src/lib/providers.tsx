@@ -6,6 +6,7 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { User } from '@supabase/supabase-js'
 import { supabase } from './supabase'
 import { Toaster } from '@/components/ui/sonner'
+import { ThemeProvider } from 'next-themes'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -130,19 +131,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        {children}
-        <Toaster
-          position="top-center"
-          toastOptions={{
-            style: {
-              fontSize: '16px',
-              padding: '16px',
-              minWidth: '300px',
-            },
-          }}
-        />
-      </AuthProvider>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="light"
+        enableSystem={true}
+        disableTransitionOnChange={false}
+        storageKey={undefined} // Disable localStorage, we'll handle theme persistence manually
+      >
+        <AuthProvider>
+          {children}
+          <Toaster
+            position="top-center"
+            toastOptions={{
+              style: {
+                fontSize: '16px',
+                padding: '16px',
+                minWidth: '300px',
+              },
+            }}
+          />
+        </AuthProvider>
+      </ThemeProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   )

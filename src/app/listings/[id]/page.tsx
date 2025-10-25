@@ -15,6 +15,8 @@ import dynamic from 'next/dynamic'
 import { getOrCreateConversation } from '@/lib/api'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
+import { ChatModal } from '@/components/ChatModal'
+import { toast } from 'sonner'
 
 // Dynamically import the map component to avoid SSR issues
 const LocationDisplayMap = dynamic(() => import('@/components/LocationDisplayMap'), {
@@ -29,6 +31,9 @@ export default function ListingDetailPage() {
   const router = useRouter()
   const queryClient = useQueryClient()
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [isChatModalOpen, setIsChatModalOpen] = useState(false)
+
+  console.log('ListingDetailPage render', { isChatModalOpen })
 
   const { data: listing, isLoading, error } = useQuery({
     queryKey: ['listing', id],
@@ -38,33 +43,26 @@ export default function ListingDetailPage() {
     staleTime: 5 * 60 * 1000, // 5 minutes
   })
 
-  const contactSellerMutation = useMutation({
-    mutationFn: async () => {
-      if (!user || !listing) throw new Error('User or listing not found')
-      if (user.id === listing.seller_id) throw new Error('Cannot contact yourself')
-
-      console.log('Creating conversation for listing:', listing.id, 'buyer:', user.id, 'seller:', listing.seller_id)
-
-      // Get or create conversation
-      const conversation = await getOrCreateConversation(
-        listing.id,
-        user.id,
-        listing.seller_id
-      )
-
-      console.log('Conversation created/found:', conversation)
-      return conversation
-    },
-    onSuccess: (conversation) => {
-      console.log('Navigating to chat with conversation:', conversation.id)
-      // Navigate to chat page with the conversation
-      router.push(`/chat?conversation=${conversation.id}`)
-    },
-    onError: (error: any) => {
-      console.error('Error contacting seller:', error)
-      alert(error.message || 'Failed to contact seller')
-    },
-  })
+  const handleContactSeller = () => {
+    console.log('Contact seller clicked', { user: !!user, listing: !!listing, isChatModalOpen })
+    if (!user) {
+      toast.error('Please sign in to contact the seller')
+      return
+    }
+    if (!listing) {
+      toast.error('Listing not loaded')
+      return
+    }
+    if (user.id === (listing as any).seller_id) {
+      toast.error('Cannot contact yourself')
+      return
+    }
+    console.log('Setting isChatModalOpen to true')
+    setIsChatModalOpen(prev => {
+      console.log('Previous state:', prev)
+      return true
+    })
+  }
 
   if (isLoading) {
     return (
@@ -79,7 +77,6 @@ export default function ListingDetailPage() {
       </div>
     )
   }
-
   if (error || !listing) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -110,19 +107,19 @@ export default function ListingDetailPage() {
       </div>
 
       {/* Header Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 mb-6">
         <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
           <div className="flex-1">
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-3">{listing.title}</h1>
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white mb-3">{listing.title}</h1>
             <div className="flex flex-wrap items-center gap-4 mb-3">
-              <div className="text-3xl lg:text-4xl font-bold text-orange-600">
+              <div className="text-3xl lg:text-4xl font-bold text-orange-600 dark:text-orange-400">
                 {listing.price % 1 === 0 ? listing.price.toFixed(0) : listing.price.toFixed(2)} ден
               </div>
-              <Badge variant="secondary" className="px-3 py-1 text-sm">
+              <Badge variant="secondary" className="px-3 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
                 {listing.category?.name}
               </Badge>
             </div>
-            <div className="flex items-center gap-4 text-sm text-gray-600">
+            <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-300">
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
                 <span>Posted {new Date(listing.created_at).toLocaleDateString()}</span>
@@ -134,20 +131,22 @@ export default function ListingDetailPage() {
             </div>
           </div>
          <div className="flex gap-3 lg:flex-col lg:gap-2">
-           {user && user.id !== listing.seller_id && (
-             <Button
-               className="bg-orange-600 hover:bg-orange-700 px-6"
-               onClick={() => contactSellerMutation.mutate()}
-               disabled={contactSellerMutation.isPending}
-             >
-               <MessageCircle className="mr-2 h-4 w-4" />
-               {contactSellerMutation.isPending ? 'Contacting...' : 'Contact Seller'}
-             </Button>
-           )}
-           <Button variant="outline" className="px-6">
-             Share Listing
-           </Button>
-         </div>
+            {user && user.id !== (listing as any).seller_id && (
+              <Button
+                className="bg-orange-600 hover:bg-orange-700 px-6"
+                onClick={() => {
+                  console.log('Button clicked directly')
+                  handleContactSeller()
+                }}
+              >
+                <MessageCircle className="mr-2 h-4 w-4" />
+                Contact Seller
+              </Button>
+            )}
+            <Button variant="outline" className="px-6 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+              Share Listing
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -155,7 +154,7 @@ export default function ListingDetailPage() {
         {/* Image Gallery */}
         <div className="lg:col-span-2">
           {listing.images && listing.images.length > 0 ? (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
               {/* Main Image with Navigation */}
               <div className="relative mb-4">
                 <div className="aspect-video relative overflow-hidden rounded-lg">
@@ -220,7 +219,7 @@ export default function ListingDetailPage() {
               )}
             </div>
           ) : listing.image_url ? (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
               <div className="aspect-video relative overflow-hidden rounded-lg">
                 <Image
                   src={listing.image_url}
@@ -233,9 +232,9 @@ export default function ListingDetailPage() {
               </div>
             </div>
           ) : (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
-              <div className="text-gray-500 text-center">
-                <Tag className="mx-auto h-16 w-16 mb-4 text-gray-300" />
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-8">
+              <div className="text-gray-500 dark:text-gray-400 text-center">
+                <Tag className="mx-auto h-16 w-16 mb-4 text-gray-300 dark:text-gray-600" />
                 <p className="text-lg">No image available</p>
               </div>
             </div>
@@ -245,23 +244,23 @@ export default function ListingDetailPage() {
         {/* Details Sidebar */}
         <div className="space-y-4">
           {/* Description */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-            <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
               <span className="w-1 h-4 bg-orange-500 rounded-full"></span>
               Description
             </h3>
-            <p className="text-gray-700 text-sm leading-relaxed">{listing.description}</p>
+            <p className="text-gray-700 dark:text-gray-200 text-sm leading-relaxed">{listing.description}</p>
           </div>
 
           {/* Location */}
           {listing.location_lat && listing.location_lng && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-              <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-blue-500" />
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-blue-500 dark:text-blue-400" />
                 Location
               </h3>
               <div className="space-y-3">
-                <div className="h-32 rounded-lg overflow-hidden border border-gray-200 shadow-sm bg-gray-50" role="application" aria-label="Location map">
+                <div className="h-32 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 shadow-sm bg-gray-50 dark:bg-gray-700" role="application" aria-label="Location map">
                   <LocationDisplayMap
                     lat={listing.location_lat!}
                     lng={listing.location_lng!}
@@ -269,9 +268,9 @@ export default function ListingDetailPage() {
                   />
                 </div>
                 {listing.location_address && (
-                  <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
-                    <p className="text-xs font-medium text-blue-900 mb-1">Address</p>
-                    <p className="text-xs text-gray-700 break-words leading-tight">{listing.location_address}</p>
+                  <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
+                    <p className="text-xs font-medium text-blue-900 dark:text-blue-200 mb-1">Address</p>
+                    <p className="text-xs text-gray-700 dark:text-gray-300 break-words leading-tight">{listing.location_address}</p>
                   </div>
                 )}
               </div>
@@ -280,6 +279,17 @@ export default function ListingDetailPage() {
 
         </div>
       </div>
+
+      {/* Chat Modal */}
+      <ChatModal
+        isOpen={isChatModalOpen}
+        onClose={() => setIsChatModalOpen(false)}
+        listingId={(listing as any)?.id || ''}
+        sellerId={(listing as any)?.seller_id || ''}
+        listingTitle={(listing as any)?.title || ''}
+        listingImage={(listing as any)?.images?.[0]?.image_url}
+        sellerName={(listing as any)?.seller?.display_name || (listing as any)?.seller?.username || 'Seller'}
+      />
 
     </div>
   )

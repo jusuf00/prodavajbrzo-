@@ -121,6 +121,32 @@
   }
 }
 
+/* Enhanced dark mode styles */
+.dark body {
+  background-color: rgb(15 23 42);
+  color: rgb(248 250 252);
+}
+
+.dark .leaflet-container {
+  background: rgb(30 41 59);
+  border-color: rgb(51 65 85);
+}
+
+.dark .leaflet-control-zoom {
+  background: rgb(30 41 59);
+  border-color: rgb(51 65 85);
+  color: rgb(203 213 225);
+}
+
+.dark .leaflet-control-zoom a {
+  background: rgb(30 41 59);
+  color: rgb(203 213 225);
+}
+
+.dark .leaflet-control-zoom a:hover {
+  background: rgb(51 65 85);
+}
+
 /* Leaflet Map Custom Styles */
 .leaflet-container {
   border-radius: 8px;

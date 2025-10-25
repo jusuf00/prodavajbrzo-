@@ -106,23 +106,23 @@ function ListingsContent() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-4">Browse Listings</h1>
+        <h1 className="text-3xl font-bold mb-4 text-gray-900 dark:text-white">Browse Listings</h1>
 
         {/* Search and Filter */}
-        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
           <form onSubmit={(e) => { e.preventDefault(); handleSearch(); }} className="flex gap-4 flex-wrap items-end">
             <div className="flex-1 min-w-64">
-              <Label htmlFor="search" className="text-sm font-medium text-gray-700 mb-2 block">
+              <Label htmlFor="search" className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
                 Search Products
               </Label>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
                 <Input
                   id="search"
                   placeholder="Search products..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault()
@@ -133,29 +133,29 @@ function ListingsContent() {
               </div>
             </div>
             <div className="min-w-48">
-              <Label htmlFor="category-select" className="text-sm font-medium text-gray-700 mb-2 block">
+              <Label htmlFor="category-select" className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
                 Category
               </Label>
               <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger id="category-select">
+                <SelectTrigger id="category-select" className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
                   <SelectValue placeholder="All categories" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All categories</SelectItem>
+                <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+                  <SelectItem value="all" className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">All categories</SelectItem>
                   {categories?.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
+                    <SelectItem key={cat.id} value={cat.id} className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
                       {cat.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <Button type="submit" className="bg-orange-600 hover:bg-orange-700 px-6 py-2">
+            <Button type="submit" className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2">
               <Search className="mr-2 h-4 w-4" />
               Search
             </Button>
             {category !== 'all' && (
-              <Button type="button" onClick={clearFilters} variant="outline" className="flex items-center gap-2">
+              <Button type="button" onClick={clearFilters} variant="outline" className="flex items-center gap-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
                 <X className="h-4 w-4" />
                 Clear Filters
               </Button>
@@ -164,7 +164,7 @@ function ListingsContent() {
         </div>
 
         {/* Results count */}
-        <div className="mb-4 text-gray-600">
+        <div className="mb-4 text-gray-600 dark:text-gray-300">
           {listings ? `${listings.length} listing${listings.length !== 1 ? 's' : ''} found` : 'No listings found'}
         </div>
       </div>
@@ -178,12 +178,12 @@ function ListingsContent() {
         </div>
       ) : (
         <div className="text-center py-12">
-          <h2 className="text-2xl font-semibold mb-2">No listings found</h2>
-          <p className="text-gray-600 mb-4">
+          <h2 className="text-2xl font-semibold mb-2 text-gray-900 dark:text-white">No listings found</h2>
+          <p className="text-gray-600 dark:text-gray-300 mb-4">
             {search || category ? 'Try adjusting your search or filters.' : 'No listings are available at the moment.'}
           </p>
           {(search || category) && (
-            <Button onClick={clearFilters} variant="outline">
+            <Button onClick={clearFilters} variant="outline" className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
               Clear filters
             </Button>
           )}

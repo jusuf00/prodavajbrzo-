@@ -7,6 +7,60 @@ export interface UserLocation {
   timestamp: number
 }
 
+// Cookie utilities
+export function setCookie(name: string, value: string, days: number = 365): void {
+  const expires = new Date()
+  expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000)
+  document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;SameSite=Lax`
+}
+
+export function getCookie(name: string): string | null {
+  const nameEQ = name + '='
+  const ca = document.cookie.split(';')
+  for (let i = 0; i < ca.length; i++) {
+    let c = ca[i]
+    while (c.charAt(0) === ' ') c = c.substring(1, c.length)
+    if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length)
+  }
+  return null
+}
+
+export function deleteCookie(name: string): void {
+  document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;SameSite=Lax`
+}
+
+export function hasCookieConsent(): boolean {
+  return getCookie('cookieConsent') === 'accepted'
+}
+
+export function setCookieConsent(accepted: boolean): void {
+  if (accepted) {
+    setCookie('cookieConsent', 'accepted', 365)
+  } else {
+    setCookie('cookieConsent', 'dismissed', 30) // Dismissed for 30 days
+  }
+}
+
+export function getThemePreference(): string | null {
+  return getCookie('theme')
+}
+
+export function setThemePreference(theme: string): void {
+  setCookie('theme', theme, 365)
+}
+
+export function hasLocationPermission(): boolean {
+  return getCookie('locationPermissionGranted') === 'true'
+}
+
+export function setLocationPermissionGranted(granted: boolean): void {
+  if (granted) {
+    setCookie('locationPermissionGranted', 'true', 365)
+  } else {
+    deleteCookie('locationPermissionGranted')
+  }
+}
+
 export function requestLocationPermission(): Promise<UserLocation> {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
@@ -21,8 +75,10 @@ export function requestLocationPermission(): Promise<UserLocation> {
           longitude: position.coords.longitude,
           timestamp: Date.now()
         }
-        // Store in localStorage
-        localStorage.setItem('userLocation', JSON.stringify(location))
+        // Store in cookies
+        setCookie('userLocation', JSON.stringify(location), 1) // Store for 1 day
+        // Mark permission as granted
+        setLocationPermissionGranted(true)
         resolve(location)
       },
       (error) => {
@@ -41,14 +97,14 @@ export function requestLocationPermission(): Promise<UserLocation> {
 
 export function getStoredLocation(): UserLocation | null {
   try {
-    const stored = localStorage.getItem('userLocation')
+    const stored = getCookie('userLocation')
     if (stored) {
       const location = JSON.parse(stored)
       // Check if location is still fresh (within 1 hour)
       if (Date.now() - location.timestamp < 3600000) {
         return location
       } else {
-        localStorage.removeItem('userLocation')
+        deleteCookie('userLocation')
         return null
       }
     }

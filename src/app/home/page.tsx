@@ -12,7 +12,7 @@ import Link from 'next/link'
 import { useAuth } from '@/lib/providers'
 import { calculateDistance } from '@/lib/utils'
 import { ListingsGridSkeleton } from '@/components/ListingCardSkeleton'
-import { requestLocationPermission, getStoredLocation, UserLocation } from '@/lib/storage'
+import { requestLocationPermission, getStoredLocation, hasLocationPermission, hasCookieConsent, UserLocation } from '@/lib/storage'
 import { toast } from 'sonner'
 
 export default function HomePage() {
@@ -52,16 +52,18 @@ export default function HomePage() {
   }, [showCategories])
 
   useEffect(() => {
-    // Check for stored location first
-    const storedLocation = getStoredLocation()
-    if (storedLocation) {
-      setUserLocation({
-        lat: storedLocation.latitude,
-        lng: storedLocation.longitude,
-      })
+    // Check if user has already granted permission and has cookie consent
+    if (hasLocationPermission() && hasCookieConsent()) {
+      const storedLocation = getStoredLocation()
+      if (storedLocation) {
+        setUserLocation({
+          lat: storedLocation.latitude,
+          lng: storedLocation.longitude,
+        })
+      }
       setLocationRequested(true)
-    } else if (!locationRequested) {
-      // Request location permission with user-friendly prompt
+    } else if (!locationRequested && hasCookieConsent()) {
+      // Request location permission with user-friendly prompt (only if cookies accepted)
       const requestLocation = async () => {
         try {
           const location = await requestLocationPermission()
@@ -106,6 +108,9 @@ export default function HomePage() {
       }, 2000)
 
       return () => clearTimeout(timer)
+    } else if (!locationRequested) {
+      // Mark as requested if cookies not accepted yet
+      setLocationRequested(true)
     }
   }, [locationRequested])
 
@@ -176,12 +181,12 @@ export default function HomePage() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <div className="bg-gradient-to-br from-orange-200 via-yellow-50 to-white py-16">
+      <div className="bg-gradient-to-br from-orange-200 via-yellow-50 to-white dark:from-gray-800 dark:via-gray-700 dark:to-gray-900 py-16">
         <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900 dark:text-white">
             Welcome to ProdavajBrzo
           </h1>
-          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
             Find great deals on products from sellers worldwide. Buy and sell with ease!
           </p>
 
@@ -190,7 +195,7 @@ export default function HomePage() {
             <Link href={user ? "/dashboard/new" : "/auth"}>
               <Button
                 variant="outline"
-                className="border-orange-600 text-orange-600 hover:bg-orange-600 hover:text-white hover:border-orange-700 px-6 py-3 text-lg font-medium transition-colors"
+                className="border-orange-600 text-orange-600 hover:bg-orange-600 hover:text-white hover:border-orange-700 dark:border-orange-500 dark:text-orange-400 dark:hover:bg-orange-500 dark:hover:text-white px-6 py-3 text-lg font-medium transition-colors"
               >
                 <Plus className="mr-2 h-5 w-5" />
                 {user ? "Add New Listing" : "Sign In to Add Listing"}
@@ -199,7 +204,7 @@ export default function HomePage() {
           </div>
 
           {/* Compact Search Bar */}
-          <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-6">
+          <div className="max-w-4xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
             <form onSubmit={handleSearchSubmit} className="flex flex-col md:flex-row gap-4 items-center">
               <div className="flex-1 relative w-full">
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -207,7 +212,7 @@ export default function HomePage() {
                   placeholder="Search products..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-12 pr-4 py-3 text-lg border-2 border-orange-300 focus:ring-2 focus:ring-orange-500 rounded-lg"
+                  className="pl-12 pr-4 py-3 text-lg border-2 border-orange-300 dark:border-orange-600 focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-lg"
                 />
               </div>
               {/* Style 4: Grid-based Category Cards */}
@@ -216,7 +221,7 @@ export default function HomePage() {
                   type="button"
                   variant="outline"
                   onClick={() => setShowCategories(!showCategories)}
-                  className="w-full md:w-48 py-3 px-4 text-lg border-gray-300 focus:ring-2 focus:ring-orange-500 rounded-lg flex items-center justify-between"
+                  className="w-full md:w-48 py-3 px-4 text-lg border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 rounded-lg flex items-center justify-between"
                 >
                   <span>
                     {category === 'all' ? 'All categories' : categories?.find(cat => cat.id === category)?.name || 'All categories'}
@@ -225,7 +230,7 @@ export default function HomePage() {
                 </Button>
 
                 {showCategories && (
-                  <div className="absolute top-full mt-2 w-full md:w-80 bg-white border border-gray-300 rounded-lg shadow-lg z-10 p-4 max-h-96 overflow-y-auto">
+                  <div className="absolute top-full mt-2 w-full md:w-80 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-10 p-4 max-h-96 overflow-y-auto">
                     <div className="flex flex-col gap-3">
                       <div
                         onClick={() => {
@@ -234,8 +239,8 @@ export default function HomePage() {
                         }}
                         className={`rounded-lg border-2 p-3 flex items-center cursor-pointer transition-all hover:scale-105 ${
                           category === 'all'
-                            ? 'border-orange-500 bg-orange-50 shadow-md'
-                            : 'border-gray-200 hover:border-orange-300 hover:bg-gray-50'
+                            ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20 shadow-md'
+                            : 'border-gray-200 dark:border-gray-600 hover:border-orange-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                         }`}
                       >
                         <span className="text-sm font-medium">All Categories</span>
@@ -250,8 +255,8 @@ export default function HomePage() {
                           }}
                           className={`rounded-lg border-2 p-3 flex items-center cursor-pointer transition-all hover:scale-105 ${
                             category === cat.id
-                              ? 'border-orange-500 bg-orange-50 shadow-md'
-                              : 'border-gray-200 hover:border-orange-300 hover:bg-gray-50'
+                              ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20 shadow-md'
+                              : 'border-gray-200 dark:border-gray-600 hover:border-orange-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                           }`}
                         >
                           <span className="text-sm font-medium">{cat.name}</span>
@@ -274,10 +279,10 @@ export default function HomePage() {
       </div>
 
       {/* Latest Listings Section */}
-      <div className="bg-gradient-to-b from-white to-orange-50/20 container mx-auto px-4 py-16">
+      <div className="bg-gradient-to-b from-white to-orange-50/20 dark:from-gray-900 dark:to-gray-800/20 container mx-auto px-4 py-16">
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">Latest Listings</h2>
-          <p className="text-gray-600 max-w-2xl mx-auto">
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Latest Listings</h2>
+          <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
             Discover the newest products added by our community of sellers
           </p>
         </div>
@@ -319,11 +324,11 @@ export default function HomePage() {
         ) : (
           <div className="text-center py-16">
             <div className="max-w-md mx-auto">
-              <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Package className="w-12 h-12 text-gray-400" />
+              <div className="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Package className="w-12 h-12 text-gray-400 dark:text-gray-500" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No listings yet</h3>
-              <p className="text-gray-600 mb-6">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No listings yet</h3>
+              <p className="text-gray-600 dark:text-gray-300 mb-6">
                 Be the first to create a listing and start selling your products!
               </p>
               <Link href={user ? "/dashboard/new" : "/dashboard"}>

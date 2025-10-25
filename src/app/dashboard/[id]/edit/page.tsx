@@ -217,43 +217,44 @@ export default function EditListingPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-8">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-8">
       <div className="w-full max-w-2xl mx-auto px-4">
         <div className="mb-6">
           <Link href="/dashboard">
-            <Button variant="ghost" className="mb-4">
+            <Button variant="ghost" className="mb-4 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Dashboard
             </Button>
           </Link>
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-900">Edit Listing</h1>
-            <p className="text-gray-600 mt-2">Update your listing details</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Edit Listing</h1>
+            <p className="text-gray-600 dark:text-gray-300 mt-2">Update your listing details</p>
           </div>
         </div>
 
-        <Card className="shadow-lg">
+        <Card className="shadow-lg bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <CardHeader>
-          <CardTitle>Edit Listing Details</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-gray-900 dark:text-white">Edit Listing Details</CardTitle>
+          <CardDescription className="text-gray-600 dark:text-gray-400">
             Make changes to your listing information
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="title">Title</Label>
+              <Label htmlFor="title" className="text-gray-700 dark:text-gray-300">Title</Label>
               <Input
                 id="title"
                 value={formData.title}
                 onChange={(e) => handleChange('title', e.target.value)}
                 placeholder="Enter product title"
                 required
+                className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description" className="text-gray-700 dark:text-gray-300">Description</Label>
               <Textarea
                 id="description"
                 value={formData.description}
@@ -261,12 +262,13 @@ export default function EditListingPage() {
                 placeholder="Describe your product"
                 rows={4}
                 required
+                className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="price">Price</Label>
+                <Label htmlFor="price" className="text-gray-700 dark:text-gray-300">Price</Label>
                 <div className="relative">
                   <Input
                     id="price"
@@ -276,24 +278,24 @@ export default function EditListingPage() {
                     value={formData.price}
                     onChange={(e) => handleChange('price', e.target.value)}
                     placeholder="0.00"
-                    className="pr-12"
+                    className="pr-12 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                     required
                   />
-                  <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
+                  <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm">
                     ден
                   </span>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
+                <Label htmlFor="category" className="text-gray-700 dark:text-gray-300">Category</Label>
                 <Select value={formData.category_id} onValueChange={(value) => handleChange('category_id', value)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
                     {categories?.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
+                      <SelectItem key={category.id} value={category.id} className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
                         {category.name}
                       </SelectItem>
                     ))}
@@ -303,12 +305,12 @@ export default function EditListingPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="images">Product Images (Up to 5)</Label>
+              <Label htmlFor="images" className="text-gray-700 dark:text-gray-300">Product Images (Up to 5)</Label>
               <div className="space-y-4">
                 {/* Current Images */}
                 {currentImages.length > 0 && imagePreviews.length === 0 && (
                   <div className="space-y-4">
-                    <p className="text-sm font-medium">Current Images:</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">Current Images:</p>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                       {currentImages.map((image, index) => (
                         <div key={image.id} className="relative">
@@ -317,7 +319,7 @@ export default function EditListingPage() {
                             alt={`Current image ${index + 1}`}
                             width={150}
                             height={112}
-                            className="rounded-lg object-contain bg-gray-50 w-full h-28"
+                            className="rounded-lg object-contain bg-gray-50 dark:bg-gray-700 w-full h-28"
                           />
                           <div className="absolute top-2 left-2 flex gap-1">
                             <Button
@@ -340,7 +342,7 @@ export default function EditListingPage() {
                 {/* New Images Preview */}
                 {imagePreviews.length > 0 && (
                   <div className="space-y-4">
-                    <p className="text-sm font-medium">New Images:</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">New Images:</p>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                       {imagePreviews.map((preview, index) => (
                         <div key={index} className="relative">
@@ -349,7 +351,7 @@ export default function EditListingPage() {
                             alt={`New image ${index + 1}`}
                             width={150}
                             height={112}
-                            className="rounded-lg object-contain bg-gray-50 w-full h-28"
+                            className="rounded-lg object-contain bg-gray-50 dark:bg-gray-700 w-full h-28"
                           />
                           <div className="absolute top-2 left-2 flex gap-1">
                             <Button
@@ -396,7 +398,7 @@ export default function EditListingPage() {
                     Upload Images (Max 5)
                   </Button>
                 </div>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   Upload new images to replace current ones. You can select multiple images and choose which one appears as default.
                 </p>
               </div>
@@ -406,7 +408,7 @@ export default function EditListingPage() {
             <div className="flex gap-4">
               <Button
                 type="submit"
-                className="bg-orange-600 hover:bg-orange-700"
+                className="bg-orange-600 hover:bg-orange-700 text-white"
                 disabled={updateMutation.isPending}
               >
                 {updateMutation.isPending ? (
@@ -419,7 +421,7 @@ export default function EditListingPage() {
                 )}
               </Button>
               <Link href="/dashboard">
-                <Button type="button" variant="outline">
+                <Button type="button" variant="outline" className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
                   Cancel
                 </Button>
               </Link>

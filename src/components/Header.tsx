@@ -8,16 +8,34 @@ import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
 import { getUnreadMessageCount } from '@/lib/api'
-import { Mail, Home, LogOut, Plus, PlusCircle } from 'lucide-react'
+import { Mail, Home, LogOut, Plus, PlusCircle, Sun, Moon } from 'lucide-react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
+import { useTheme } from 'next-themes'
+import { getThemePreference, setThemePreference } from '@/lib/storage'
 
 export function Header() {
   const { user, loading } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
+  const { theme, setTheme } = useTheme()
   const [isSigningOut, setIsSigningOut] = useState(false)
   const [signOutCooldown, setSignOutCooldown] = useState(0)
+
+  // Initialize theme from cookie on mount
+  useEffect(() => {
+    const savedTheme = getThemePreference()
+    if (savedTheme && savedTheme !== theme) {
+      setTheme(savedTheme)
+    }
+  }, [])
+
+  // Save theme preference to cookie when it changes
+  useEffect(() => {
+    if (theme) {
+      setThemePreference(theme)
+    }
+  }, [theme])
 
  const { data: unreadCount } = useQuery({
    queryKey: ['unread-messages', user?.id],
@@ -47,33 +65,65 @@ export function Header() {
     setIsSigningOut(true)
     setSignOutCooldown(4) // Set 4 second cooldown
 
-    // Add a small delay for smooth animation
-    setTimeout(async () => {
+    try {
       const { error } = await supabase.auth.signOut()
       if (error) {
+        console.error('Sign out error:', error)
         toast.error('Error signing out')
         setIsSigningOut(false)
-        setSignOutCooldown(0) // Reset cooldown on error
+        setSignOutCooldown(0)
       } else {
         toast.success('Signed out successfully')
-        // Add another delay before navigation for better UX
-        setTimeout(() => {
-          router.push('/home')
-        }, 500)
+        // Navigate immediately without extra delay
+        router.push('/home')
       }
-    }, 300)
+    } catch (error) {
+      console.error('Unexpected sign out error:', error)
+      toast.error('Unexpected error during sign out')
+      setIsSigningOut(false)
+      setSignOutCooldown(0)
+    }
   }
 
   return (
     <>
-      <header className="border-b bg-white">
+      <header className="border-b bg-white dark:bg-gray-900 dark:border-gray-700">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/home" onClick={() => window.location.href = '/home'} className="flex items-center gap-2 md:gap-3 text-lg md:text-2xl font-bold text-black hover:text-black transition-colors flex-shrink-0">
+          <Link href="/home" onClick={() => window.location.href = '/home'} className="flex items-center gap-2 md:gap-3 text-lg md:text-2xl font-bold text-black dark:text-white hover:text-black dark:hover:text-white transition-colors flex-shrink-0">
             <img src="/icons/prodavajbrzoicon.png" alt="ProdavajBrzo Logo" className="h-6 w-6 md:h-10 md:w-10" />
             ProdavajBrzo
           </Link>
 
+
           <div className="flex items-center gap-1 md:gap-4 flex-shrink-0">
+            {/* Theme Toggle */}
+            <div className="flex items-center gap-3 mr-2 md:mr-4">
+              {/* Sun icon (left of toggle) */}
+              <Sun className={`h-5 w-5 transition-all duration-300 ${
+                theme === 'dark' ? 'opacity-50 scale-90 text-yellow-500' : 'opacity-100 scale-100 text-yellow-600'
+              }`} />
+
+              <button
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 ${
+                  theme === 'dark' ? 'bg-orange-500' : 'bg-gray-200'
+                }`}
+                aria-label="Toggle theme"
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                    theme === 'dark' ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+                <span className="sr-only">Toggle theme</span>
+              </button>
+
+              {/* Moon icon (right of toggle) */}
+              <Moon className={`h-5 w-5 transition-all duration-300 ${
+                theme === 'dark' ? 'opacity-100 scale-100 text-white' : 'opacity-50 scale-90 text-gray-600'
+              }`} />
+            </div>
+
             {user ? (
               <>
                 <Link href="/dashboard/new">

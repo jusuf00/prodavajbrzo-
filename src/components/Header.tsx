@@ -232,22 +232,12 @@ export function Header({ locale }: { locale: string }) {
                         </div>
                       )}
 
-                      {/* Sign In for non-users */}
-                      {!user && pathname !== `/${locale}/auth` && (
-                        <div className="px-4 py-2">
-                          <Link href={`/${locale}/auth`} onClick={() => setShowDesktopMenu(false)}>
-                            <Button size="sm" className="w-full bg-orange-600 hover:bg-orange-700 text-white">
-                              {t('signIn')}
-                            </Button>
-                          </Link>
-                        </div>
-                      )}
                     </div>
                   </div>
                 )}
               </div>
 
-              {user && (
+              {user ? (
                 <Button
                   onClick={handleSignOut}
                   variant="outline"
@@ -264,6 +254,12 @@ export function Header({ locale }: { locale: string }) {
                   )}
                   {isSigningOut ? t('signingOut') : signOutCooldown > 0 ? t('waitSeconds', { seconds: signOutCooldown }) : t('signOut')}
                 </Button>
+              ) : pathname !== `/${locale}/auth` && (
+                <Link href={`/${locale}/auth`}>
+                  <Button size="sm" className="bg-orange-600 hover:bg-orange-700 text-white text-sm px-4">
+                    {t('signIn')}
+                  </Button>
+                </Link>
               )}
             </div>
 

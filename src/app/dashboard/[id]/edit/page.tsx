@@ -17,8 +17,10 @@ import { toast } from 'sonner'
 import { ArrowLeft, Save, Upload, X, Trash2, Star } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useTranslations } from 'next-intl'
 
 export default function EditListingPage() {
+  const t = useTranslations('editListing')
   const params = useParams()
   const listingId = params.id as string
   const { user } = useAuth()
@@ -194,7 +196,7 @@ export default function EditListingPage() {
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center">Loading listing...</div>
+        <div className="text-center">{t('loadingListing')}</div>
       </div>
     )
   }
@@ -203,12 +205,12 @@ export default function EditListingPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Listing Not Found</h1>
-          <p className="text-gray-600 mb-4">The listing you're trying to edit doesn't exist or you don't have permission to edit it.</p>
+          <h1 className="text-2xl font-bold mb-4">{t('listingNotFound')}</h1>
+          <p className="text-gray-600 mb-4">{t('listingNotFoundDesc')}</p>
           <Link href="/dashboard">
             <Button>
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Dashboard
+              {t('backToDashboard')}
             </Button>
           </Link>
         </div>
@@ -223,26 +225,26 @@ export default function EditListingPage() {
           <Link href="/dashboard">
             <Button variant="ghost" className="mb-4 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Dashboard
+              {t('backToDashboard')}
             </Button>
           </Link>
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Edit Listing</h1>
-            <p className="text-gray-600 dark:text-gray-300 mt-2">Update your listing details</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('title')}</h1>
+            <p className="text-gray-600 dark:text-gray-300 mt-2">{t('subtitle')}</p>
           </div>
         </div>
 
         <Card className="shadow-lg bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <CardHeader>
-          <CardTitle className="text-gray-900 dark:text-white">Edit Listing Details</CardTitle>
+          <CardTitle className="text-gray-900 dark:text-white">{t('editDetails')}</CardTitle>
           <CardDescription className="text-gray-600 dark:text-gray-400">
-            Make changes to your listing information
+            {t('makeChanges')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="title" className="text-gray-700 dark:text-gray-300">Title</Label>
+              <Label htmlFor="title" className="text-gray-700 dark:text-gray-300">{t('titleLabel')}</Label>
               <Input
                 id="title"
                 value={formData.title}
@@ -254,7 +256,7 @@ export default function EditListingPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description" className="text-gray-700 dark:text-gray-300">Description</Label>
+              <Label htmlFor="description" className="text-gray-700 dark:text-gray-300">{t('descriptionLabel')}</Label>
               <Textarea
                 id="description"
                 value={formData.description}
@@ -268,7 +270,7 @@ export default function EditListingPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="price" className="text-gray-700 dark:text-gray-300">Price</Label>
+                <Label htmlFor="price" className="text-gray-700 dark:text-gray-300">{t('priceLabel')}</Label>
                 <div className="relative">
                   <Input
                     id="price"
@@ -278,7 +280,7 @@ export default function EditListingPage() {
                     value={formData.price}
                     onChange={(e) => handleChange('price', e.target.value)}
                     placeholder="0.00"
-                    className="pr-12 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                    className="pr-12 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
                     required
                   />
                   <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm">
@@ -288,7 +290,7 @@ export default function EditListingPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="category" className="text-gray-700 dark:text-gray-300">Category</Label>
+                <Label htmlFor="category" className="text-gray-700 dark:text-gray-300">{t('categoryLabel')}</Label>
                 <Select value={formData.category_id} onValueChange={(value) => handleChange('category_id', value)}>
                   <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
                     <SelectValue placeholder="Select category" />
@@ -305,12 +307,12 @@ export default function EditListingPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="images" className="text-gray-700 dark:text-gray-300">Product Images (Up to 5)</Label>
+              <Label htmlFor="images" className="text-gray-700 dark:text-gray-300">{t('productImages')}</Label>
               <div className="space-y-4">
                 {/* Current Images */}
                 {currentImages.length > 0 && imagePreviews.length === 0 && (
                   <div className="space-y-4">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">Current Images:</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{t('currentImages')}</p>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                       {currentImages.map((image, index) => (
                         <div key={image.id} className="relative">
@@ -342,7 +344,7 @@ export default function EditListingPage() {
                 {/* New Images Preview */}
                 {imagePreviews.length > 0 && (
                   <div className="space-y-4">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">New Images:</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{t('newImages')}</p>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                       {imagePreviews.map((preview, index) => (
                         <div key={index} className="relative">
@@ -395,11 +397,11 @@ export default function EditListingPage() {
                     className="bg-orange-600 hover:bg-orange-700 text-white border-orange-600 hover:border-orange-700"
                   >
                     <Upload className="mr-2 h-4 w-4" />
-                    Upload Images (Max 5)
+                    {t('uploadImages')}
                   </Button>
                 </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Upload new images to replace current ones. You can select multiple images and choose which one appears as default.
+                  {t('uploadNewImages')}
                 </p>
               </div>
             </div>
@@ -412,17 +414,17 @@ export default function EditListingPage() {
                 disabled={updateMutation.isPending}
               >
                 {updateMutation.isPending ? (
-                  'Updating...'
+                  t('updating')
                 ) : (
                   <>
                     <Save className="mr-2 h-4 w-4" />
-                    Update Listing
+                    {t('updateListing')}
                   </>
                 )}
               </Button>
               <Link href="/dashboard">
                 <Button type="button" variant="outline" className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
-                  Cancel
+                  {t('cancel')}
                 </Button>
               </Link>
             </div>

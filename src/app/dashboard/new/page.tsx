@@ -17,8 +17,10 @@ import { ArrowLeft, Save, Upload, X, Star } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import LocationMap from '@/components/LocationMap'
+import { useTranslations } from 'next-intl'
 
 export default function NewListingPage() {
+  const t = useTranslations('newListing')
   const { user } = useAuth()
   const router = useRouter()
   const queryClient = useQueryClient()
@@ -185,46 +187,48 @@ export default function NewListingPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-8">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-8">
       <div className="w-full max-w-2xl mx-auto px-4">
         <div className="mb-6">
           <Link href="/dashboard">
             <Button variant="ghost" className="mb-4">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Dashboard
+              {t('backToDashboard')}
             </Button>
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900 text-center">Create New Listing</h1>
-          <p className="text-gray-600 mt-2 text-center">Fill in the details for your new product listing</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white text-center">{t('title')}</h1>
+          <p className="text-gray-600 dark:text-gray-300 mt-2 text-center">{t('subtitle')}</p>
         </div>
 
-        <Card className="shadow-lg">
+        <Card className="shadow-lg bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Listing Details</CardTitle>
+            <CardTitle className="text-2xl">{t('listingDetails')}</CardTitle>
             <CardDescription>
-              Provide information about your product
+              {t('provideInfo')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="title">Title</Label>
+                <Label htmlFor="title">{t('titleLabel')}</Label>
                 <Input
                   id="title"
                   value={formData.title}
                   onChange={(e) => handleChange('title', e.target.value)}
                   placeholder="Enter product title"
+                  className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
                   required
                 />
               </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t('descriptionLabel')}</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleChange('description', e.target.value)}
                 placeholder="Describe your product"
+                className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
                 rows={6}
                 required
               />
@@ -232,7 +236,7 @@ export default function NewListingPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="price">Price</Label>
+                <Label htmlFor="price">{t('priceLabel')}</Label>
                 <div className="relative">
                   <Input
                     id="price"
@@ -242,20 +246,20 @@ export default function NewListingPage() {
                     value={formData.price}
                     onChange={(e) => handleChange('price', e.target.value)}
                     placeholder="0.00"
-                    className="pr-12"
+                    className="pr-12 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
                     required
                   />
-                  <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
+                  <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm">
                     ден
                   </span>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
+                <Label htmlFor="category">{t('categoryLabel')}</Label>
                 <Select value={formData.category_id} onValueChange={(value) => handleChange('category_id', value)}>
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select category" />
+                    <SelectValue placeholder="Select category" className="text-gray-900 dark:text-white" />
                   </SelectTrigger>
                   <SelectContent className="z-[100]">
                     {categories?.map((category) => (
@@ -269,7 +273,7 @@ export default function NewListingPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="images" className="text-center">Product Images</Label>
+              <Label htmlFor="images" className="text-center">{t('productImages')}</Label>
               <div className="space-y-4">
                 <div className="relative">
                   <input
@@ -289,12 +293,12 @@ export default function NewListingPage() {
                     {isUploading ? (
                       <>
                         <div className="loading-spinner mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                        Uploading...
+                        {t('uploading')}
                       </>
                     ) : (
                       <>
                         <Upload className="mr-2 h-4 w-4" />
-                        Upload Images (Max Limit 5)
+                        {t('uploadImages')}
                       </>
                     )}
                   </Button>
@@ -355,17 +359,17 @@ export default function NewListingPage() {
                 disabled={createMutation.isPending}
               >
                 {createMutation.isPending ? (
-                  'Creating...'
+                  t('creating')
                 ) : (
                   <>
                     <Save className="mr-2 h-4 w-4" />
-                    Create Listing
+                    {t('createListing')}
                   </>
                 )}
               </Button>
               <Link href="/dashboard">
                 <Button type="button" variant="outline">
-                  Cancel
+                  {t('cancel')}
                 </Button>
               </Link>
             </div>

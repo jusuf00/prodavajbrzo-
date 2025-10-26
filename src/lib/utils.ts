@@ -40,7 +40,7 @@ export function calculateDistance(lat1: number, lon1: number, lat2: number, lon2
 }
 
 export function formatDistance(distance: number): string {
-  if (distance < 1) {
+  if (distance < 0.5) {
     return `${Math.round(distance * 1000)}m away from you`;
   } else {
     return `${distance.toFixed(1)}km away from you`;

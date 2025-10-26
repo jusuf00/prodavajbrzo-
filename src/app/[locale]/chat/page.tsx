@@ -15,6 +15,7 @@ import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
+import { useTranslations } from 'next-intl'
 
 // Define types for our chat system
 type Message = {
@@ -57,17 +58,18 @@ type Conversation = {
 import { getConversationsWithLatestMessage, getUnreadMessageCount, markConversationRead, getConversationMessages, sendMessage } from '@/lib/api'
 
 function ChatContent() {
-   const { user, loading: authLoading } = useAuth()
-   const queryClient = useQueryClient()
-   const searchParams = useSearchParams()
-   const conversationId = searchParams.get('conversation')
-   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
-   const [messages, setMessages] = useState<Message[]>([])
-   const [newMessage, setNewMessage] = useState('')
-   const messagesEndRef = useRef<HTMLDivElement>(null)
-   const [view, setView] = useState<'conversations' | 'chat'>('conversations')
-   const [selectedConversations, setSelectedConversations] = useState<Set<string>>(new Set())
-   const [isSelectionMode, setIsSelectionMode] = useState(false)
+    const { user, loading: authLoading } = useAuth()
+    const queryClient = useQueryClient()
+    const searchParams = useSearchParams()
+    const conversationId = searchParams.get('conversation')
+    const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
+    const [messages, setMessages] = useState<Message[]>([])
+    const [newMessage, setNewMessage] = useState('')
+    const messagesEndRef = useRef<HTMLDivElement>(null)
+    const [view, setView] = useState<'conversations' | 'chat'>('conversations')
+    const [selectedConversations, setSelectedConversations] = useState<Set<string>>(new Set())
+    const [isSelectionMode, setIsSelectionMode] = useState(false)
+    const t = useTranslations('chat')
 
   const { data: conversations, isLoading, error, refetch } = useQuery({
     queryKey: ['user-conversations', user?.id],
@@ -260,23 +262,23 @@ function ChatContent() {
               </svg>
             </div>
             <div class="ml-3">
-              <h3 class="text-lg font-semibold text-gray-900">Delete Conversations</h3>
+              <h3 class="text-lg font-semibold text-gray-900">{t('deleteConversations')}</h3>
             </div>
           </div>
           <div class="mb-6">
             <p class="text-gray-600">
-              Are you sure you want to delete <strong class="text-red-600">${selectedConversations.size} conversation(s)</strong> and all their messages?
+              {t('deleteConversationsDesc', { count: selectedConversations.size })}
             </p>
             <p class="text-sm text-gray-500 mt-2">
-              This action <strong>cannot be undone</strong> and will permanently remove all messages from the selected conversations.
+              {t('deleteWarning')}
             </p>
           </div>
           <div class="flex justify-end space-x-3">
             <button class="cancel-btn px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300">
-              Cancel
+              {t('cancel')}
             </button>
             <button class="delete-btn px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-300">
-              Delete
+              {t('delete')}
             </button>
           </div>
         </div>
@@ -350,7 +352,7 @@ function ChatContent() {
 
         setSelectedConversations(new Set())
         setIsSelectionMode(false)
-        toast.success(`${selectedConversations.size} conversation(s) and all messages deleted successfully`)
+        toast.success(t('conversationsDeleted', { count: selectedConversations.size }))
       } catch (error) {
         console.error('Error deleting conversations:', error)
         toast.error('Failed to delete conversations')
@@ -406,8 +408,8 @@ function ChatContent() {
         <div className="text-center loading-pulse">
           <div className="loading-spinner w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-6 shadow-lg"></div>
           <div className="space-y-2">
-            <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Loading Messages</h2>
-            <p className="text-gray-600 dark:text-gray-300">Connecting to your conversations...</p>
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-white">{t('loadingMessages')}</h2>
+            <p className="text-gray-600 dark:text-gray-300">{t('connectingConversations')}</p>
           </div>
         </div>
       </div>
@@ -418,9 +420,9 @@ function ChatContent() {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Please sign in to view messages</h1>
+          <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">{t('signInToView')}</h1>
           <Link href="/auth">
-            <Button className="bg-orange-500 hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-700">Sign In</Button>
+            <Button className="bg-orange-500 hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-700">{t('signIn')}</Button>
           </Link>
         </div>
       </div>
@@ -434,9 +436,9 @@ function ChatContent() {
         <div className="text-center">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center justify-center gap-3">
             <Mail className="h-8 w-8" />
-            Conversations
+            {t('conversations')}
           </h1>
-          <p className="text-gray-600 dark:text-gray-300 mt-2">Manage your conversations with buyers and sellers</p>
+          <p className="text-gray-600 dark:text-gray-300 mt-2">{t('manageConversations')}</p>
         </div>
       </div>
 
@@ -446,73 +448,73 @@ function ChatContent() {
           <Card className="h-fit overflow-hidden bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-semibold text-gray-900 dark:text-white text-xl">Conversations</h3>
-                <div className="flex items-center gap-2">
-                  {isSelectionMode ? (
-                    <>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={toggleSelectionMode}
-                        className="text-xs"
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleSelectAll}
-                        className="text-xs"
-                      >
-                        <CheckSquare className="h-4 w-4 mr-1" />
-                        Select All
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleDeselectAll}
-                        className="text-xs"
-                      >
-                        <Square className="h-4 w-4 mr-1" />
-                        Deselect All
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={handleDeleteSelected}
-                        disabled={selectedConversations.size === 0}
-                        className="text-xs"
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Delete ({selectedConversations.size})
-                      </Button>
-                    </>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={toggleSelectionMode}
-                      className="text-xs"
-                    >
-                      <Pencil className="h-4 w-4 mr-1" />
-                      Edit
-                    </Button>
-                  )}
-                </div>
-              </div>
+               <h3 className="font-semibold text-gray-900 dark:text-white text-xl">{t('conversations')}</h3>
+               <div className="flex items-center gap-2">
+                 {isSelectionMode ? (
+                   <>
+                     <Button
+                       variant="outline"
+                       size="sm"
+                       onClick={toggleSelectionMode}
+                       className="text-xs"
+                     >
+                       {t('cancel')}
+                     </Button>
+                     <Button
+                       variant="outline"
+                       size="sm"
+                       onClick={handleSelectAll}
+                       className="text-xs"
+                     >
+                       <CheckSquare className="h-4 w-4 mr-1" />
+                       {t('selectAll')}
+                     </Button>
+                     <Button
+                       variant="outline"
+                       size="sm"
+                       onClick={handleDeselectAll}
+                       className="text-xs"
+                     >
+                       <Square className="h-4 w-4 mr-1" />
+                       {t('deselectAll')}
+                     </Button>
+                     <Button
+                       variant="destructive"
+                       size="sm"
+                       onClick={handleDeleteSelected}
+                       disabled={selectedConversations.size === 0}
+                       className="text-xs"
+                     >
+                       <Trash2 className="h-4 w-4 mr-1" />
+                       {t('deleteSelected', { count: selectedConversations.size })}
+                     </Button>
+                   </>
+                 ) : (
+                   <Button
+                     variant="outline"
+                     size="sm"
+                     onClick={toggleSelectionMode}
+                     className="text-xs"
+                   >
+                     <Pencil className="h-4 w-4 mr-1" />
+                     {t('edit')}
+                   </Button>
+                 )}
+               </div>
+             </div>
 
               {isLoading ? (
                 <div className="text-center py-12 loading-pulse">
                   <div className="loading-spinner w-10 h-10 border-3 border-blue-500 border-t-transparent rounded-full mx-auto mb-4 shadow-sm"></div>
                   <div className="space-y-1">
-                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Loading conversations...</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Fetching your messages</p>
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('loadingConversations')}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{t('fetchingMessages')}</p>
                   </div>
                 </div>
               ) : error ? (
                 <div className="text-center py-12">
-                  <p className="text-sm text-red-500 dark:text-red-400 mb-2">Error loading conversations</p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500">Check console for details</p>
+                  <p className="text-sm text-red-500 dark:text-red-400 mb-2">{t('errorLoadingConversations')}</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500">{t('checkConsole')}</p>
                 </div>
               ) : conversations && Array.isArray(conversations) && conversations.length > 0 ? (
                 <div className="space-y-3 max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-100 dark:scrollbar-track-gray-700">
@@ -576,12 +578,12 @@ function ChatContent() {
                                 <p className={`text-base font-medium truncate ${
                                   isUnread ? 'text-gray-900 dark:text-white font-semibold' : 'text-gray-700 dark:text-gray-300'
                                 }`}>
-                                  {otherParticipant?.display_name || 'Unknown User'}
+                                  {otherParticipant?.display_name || t('unknownUser')}
                                 </p>
                                 <p className={`text-sm truncate mt-1 ${
                                   isUnread ? 'text-gray-600 dark:text-gray-400' : 'text-gray-500 dark:text-gray-500'
                                 }`}>
-                                  {conversation.listing?.title || 'Unknown Listing'}
+                                  {conversation.listing?.title || t('unknownListing')}
                                 </p>
                               </div>
                               <div className="flex flex-col items-end gap-1 flex-shrink-0 ml-3">
@@ -612,7 +614,7 @@ function ChatContent() {
                                 }
                               </p>
                             ) : (
-                              <p className="text-sm text-gray-400 dark:text-gray-500 italic">No messages yet</p>
+                              <p className="text-sm text-gray-400 dark:text-gray-500 italic">{t('noMessagesYet')}</p>
                             )}
                           </div>
                         </div>
@@ -623,7 +625,7 @@ function ChatContent() {
               ) : (
                 <div className="text-center py-12">
                   <Mail className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                  <p className="text-sm text-gray-500 dark:text-gray-400">No conversations yet</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('noConversationsYet')}</p>
                 </div>
               )}
             </CardContent>
@@ -659,10 +661,10 @@ function ChatContent() {
                 )}
                 <div>
                   <h3 className="font-semibold text-gray-900 dark:text-white">
-                    {selectedConversation!.listing?.title || 'Unknown Listing'}
+                    {selectedConversation!.listing?.title || t('unknownListing')}
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-300">
-                    with {getOtherParticipant(selectedConversation!)?.display_name || 'Unknown User'}
+                    {t('withUser', { user: getOtherParticipant(selectedConversation!)?.display_name || t('unknownUser') })}
                   </p>
                 </div>
                 {selectedConversation!.listing?.price && (
@@ -685,7 +687,7 @@ function ChatContent() {
                       <div className="flex flex-col max-w-[70%]">
                         {message.sender_id !== user.id && (
                           <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 px-3">
-                            {getOtherParticipant(selectedConversation!)?.display_name || 'Unknown User'}
+                            {getOtherParticipant(selectedConversation!)?.display_name || t('unknownUser')}
                           </p>
                         )}
                         <div
@@ -715,7 +717,7 @@ function ChatContent() {
                 <Input
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Type your message..."
+                  placeholder={t('typeMessage')}
                   className="flex-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
                 />
                 <Button
@@ -735,8 +737,9 @@ function ChatContent() {
 }
 
 export default function ChatPage() {
+  const t = useTranslations('chat')
   return (
-    <Suspense fallback={<div className="container mx-auto px-4 py-8"><div className="text-center text-gray-900 dark:text-white">Loading chat...</div></div>}>
+    <Suspense fallback={<div className="container mx-auto px-4 py-8"><div className="text-center text-gray-900 dark:text-white">{t('loadingChat')}</div></div>}>
       <ChatContent />
     </Suspense>
   )

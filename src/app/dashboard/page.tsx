@@ -12,8 +12,10 @@ import Link from 'next/link'
 import { toast } from 'sonner'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, Suspense, useState } from 'react'
+import { useTranslations } from 'next-intl'
 
 function DashboardContent() {
+  const t = useTranslations('dashboard')
   const { user, loading: authLoading } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -85,7 +87,7 @@ function DashboardContent() {
   })
 
   const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this listing?')) {
+    if (confirm(t('confirmDelete'))) {
       deleteMutation.mutate(id)
     }
   }
@@ -109,8 +111,8 @@ function DashboardContent() {
         <div className="text-center loading-pulse">
           <div className="loading-spinner w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full mx-auto mb-6 shadow-lg"></div>
           <div className="space-y-2">
-            <h2 className="text-xl font-semibold text-gray-800">Loading Dashboard</h2>
-            <p className="text-gray-600">Preparing your listings...</p>
+            <h2 className="text-xl font-semibold text-gray-800">{t('loading')}</h2>
+            <p className="text-gray-600">{t('preparing')}</p>
           </div>
         </div>
       </div>
@@ -127,16 +129,18 @@ function DashboardContent() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
-        <p className="text-xl font-semibold text-gray-900 mb-2">Welcome, {userProfile?.display_name || user?.email?.split('@')[0] || 'User'}!</p>
-        <p className="text-gray-600">Manage your listings and view statistics</p>
+        <h1 className="text-3xl font-bold mb-2">{t('title')}</h1>
+        <p className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+          Добредојдовте, <span className="bg-orange-500 text-white px-2 py-1 rounded-full">{userProfile?.display_name || user?.email?.split('@')[0] || 'User'}</span>!
+        </p>
+        <p className="text-gray-600 dark:text-gray-300">{t('subtitle')}</p>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Listings</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('totalListings')}</CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -146,7 +150,7 @@ function DashboardContent() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Listings</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('activeListings')}</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -156,7 +160,7 @@ function DashboardContent() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Sold Listings</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('soldListings')}</CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -176,7 +180,7 @@ function DashboardContent() {
         {/* Active Listings */}
         {activeListings.length > 0 && (
           <div>
-            <h2 className="text-2xl font-semibold mb-4">Active Listings</h2>
+            <h2 className="text-2xl font-semibold mb-4">{t('activeListingsTitle')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
               {activeListings.map((listing) => (
                 <div key={listing.id} className="flex flex-col">
@@ -212,7 +216,7 @@ function DashboardContent() {
                             disabled={markSoldMutation.isPending}
                           >
                             <CheckCircle className="h-4 w-4 mr-2" />
-                            {markSoldMutation.isPending ? 'Marking...' : 'Mark Sold'}
+                            {markSoldMutation.isPending ? t('marking') : t('markSold')}
                           </Button>
                           <Link href={`/dashboard/${listing.id}/edit`}>
                             <Button
@@ -226,7 +230,7 @@ function DashboardContent() {
                               })}
                             >
                               <Edit className="h-4 w-4 mr-2" />
-                              Edit
+                              {t('edit')}
                             </Button>
                           </Link>
                           <Button
@@ -243,7 +247,7 @@ function DashboardContent() {
                             }}
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
+                            {t('delete')}
                           </Button>
                         </div>
                       )}
@@ -259,7 +263,7 @@ function DashboardContent() {
         {/* Sold Listings */}
         {soldListings.length > 0 && (
           <div>
-            <h2 className="text-2xl font-semibold mb-4">Sold Listings</h2>
+            <h2 className="text-2xl font-semibold mb-4">{t('soldListingsTitle')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
               {soldListings.map((listing) => (
                 <div key={listing.id} className="flex flex-col">
@@ -290,7 +294,7 @@ function DashboardContent() {
                               })}
                             >
                               <Edit className="h-4 w-4 mr-2" />
-                              Edit
+                              {t('edit')}
                             </Button>
                           </Link>
                           <Button
@@ -307,7 +311,7 @@ function DashboardContent() {
                             }}
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
+                            {t('delete')}
                           </Button>
                         </div>
                       )}
@@ -324,12 +328,12 @@ function DashboardContent() {
         {(!listings || listings.length === 0) && (
           <div className="text-center py-12">
             <Package className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <h2 className="text-2xl font-semibold mb-2">No listings yet</h2>
-            <p className="text-gray-600 mb-4">Create your first listing to get started</p>
+            <h2 className="text-2xl font-semibold mb-2">{t('noListings')}</h2>
+            <p className="text-gray-600 mb-4">{t('noListingsDesc')}</p>
             <Link href="/dashboard/new">
               <Button className="bg-orange-600 hover:bg-orange-700">
                 <Plus className="mr-2 h-4 w-4" />
-                Create Listing
+                {t('createListing')}
               </Button>
             </Link>
           </div>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,8 +9,11 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { Mail } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 export default function AuthPage() {
+  const t = useTranslations('auth')
+  const { locale } = useParams()
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
@@ -47,7 +50,7 @@ export default function AuthPage() {
     const now = Date.now()
     if (lastSentTime && (now - lastSentTime) < 60000) {
       const remainingSeconds = Math.ceil((60000 - (now - lastSentTime)) / 1000)
-      toast.error(`Please wait ${remainingSeconds} seconds before requesting another magic link.`, {
+      toast.error(t('waitMessage', { seconds: remainingSeconds }), {
         duration: 4000,
       })
       return
@@ -59,7 +62,7 @@ export default function AuthPage() {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: 'https://prodavajbrzo.vercel.app/dashboard',
+          emailRedirectTo: `https://prodavajbrzo.vercel.app/dashboard`,
           data: {
             custom_email_template: {
               subject: 'Welcome to ProdavajBrzo! 🎉',
@@ -110,7 +113,7 @@ export default function AuthPage() {
       } else {
         setLastSentTime(now)
         setCountdown(60)
-        toast.success('Check your email to complete sign-in.', {
+        toast.success(t('checkEmail'), {
           duration: 4000,
         })
       }
@@ -125,19 +128,19 @@ export default function AuthPage() {
     <div className="container mx-auto px-4 py-8 flex items-center justify-center min-h-[60vh]">
       <Card className="w-full max-w-md bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl text-gray-900 dark:text-white">Sign In / Register</CardTitle>
+          <CardTitle className="text-2xl text-gray-900 dark:text-white">{t('title')}</CardTitle>
           <CardDescription className="text-gray-600 dark:text-gray-400">
-            Enter your email to receive a magic link for passwordless authentication
+            {t('description')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSignIn} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-gray-700 dark:text-gray-300">Email</Label>
+              <Label htmlFor="email" className="text-gray-700 dark:text-gray-300">{t('email')}</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="your@email.com"
+                placeholder={t('emailPlaceholder')}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -150,20 +153,20 @@ export default function AuthPage() {
               disabled={loading || countdown > 0}
             >
               {loading ? (
-                'Sending...'
+                t('sending')
               ) : countdown > 0 ? (
-                `Try again in ${countdown}s`
+                t('tryAgainIn', { seconds: countdown })
               ) : (
                 <>
                   <Mail className="mr-2 h-4 w-4" />
-                  Send Magic Link
+                  {t('sendMagicLink')}
                 </>
               )}
             </Button>
           </form>
           <div className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
-            <p>We'll send you a secure link to sign in instantly.</p>
-            <p>No password required!</p>
+            <p>{t('footerText')}</p>
+            <p>{t('noPassword')}</p>
           </div>
         </CardContent>
       </Card>

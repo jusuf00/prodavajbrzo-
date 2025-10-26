@@ -22,12 +22,19 @@ interface LocationDisplayMapProps {
 export default function LocationDisplayMap({ lat, lng, address }: LocationDisplayMapProps) {
   const [isClient, setIsClient] = useState(false)
   const [mapError, setMapError] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
-    setIsClient(true)
+    // Delay to ensure DOM is fully ready
+    const timer = setTimeout(() => {
+      setIsClient(true)
+      setIsMounted(true)
+    }, 500)
+
+    return () => clearTimeout(timer)
   }, [])
 
-  if (!isClient) {
+  if (!isClient || !isMounted) {
     return (
       <div className="h-48 rounded-lg overflow-hidden border bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center relative">
         <div className="text-center">
@@ -54,18 +61,23 @@ export default function LocationDisplayMap({ lat, lng, address }: LocationDispla
   }
 
   return (
-    <div className="h-48 rounded-lg overflow-hidden border border-gray-200 shadow-sm bg-gray-50" role="application" aria-label="Location map">
+    <div className="h-24 rounded-lg overflow-hidden border border-gray-200 shadow-sm bg-gray-50 relative z-0" role="application" aria-label="Location map">
       <MapContainer
+        key={`${lat}-${lng}`} // Force re-mount when coordinates change
         center={[lat, lng]}
         zoom={15}
         style={{ height: '100%', width: '100%' }}
         className="rounded-lg"
-        zoomControl={true}
+        zoomControl={false}
         attributionControl={false}
-        scrollWheelZoom={true}
-        doubleClickZoom={true}
-        dragging={true}
-        touchZoom={true}
+        scrollWheelZoom={false}
+        doubleClickZoom={false}
+        dragging={false}
+        touchZoom={false}
+        whenReady={() => {
+          // Map is ready
+          console.log('Map ready')
+        }}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

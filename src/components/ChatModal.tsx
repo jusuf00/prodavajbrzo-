@@ -9,6 +9,7 @@ import { X, MessageCircle, Send, Minimize2, Maximize2 } from 'lucide-react'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import { getConversationMessages, sendMessage, getOrCreateConversation, markConversationRead } from '@/lib/api'
+import { useTranslations } from 'next-intl'
 
 // Define types for our chat system
 type Message = {
@@ -63,12 +64,13 @@ interface ChatModalProps {
 }
 
 export function ChatModal({ isOpen, onClose, listingId, sellerId, listingTitle, listingImage, sellerName }: ChatModalProps) {
-  const { user } = useAuth()
-  const queryClient = useQueryClient()
-  const [messages, setMessages] = useState<Message[]>([])
-  const [newMessage, setNewMessage] = useState('')
-  const [isMinimized, setIsMinimized] = useState(false)
-  const [conversation, setConversation] = useState<Conversation | null>(null)
+   const { user } = useAuth()
+   const queryClient = useQueryClient()
+   const [messages, setMessages] = useState<Message[]>([])
+   const [newMessage, setNewMessage] = useState('')
+   const [isMinimized, setIsMinimized] = useState(false)
+   const [conversation, setConversation] = useState<Conversation | null>(null)
+   const t = useTranslations('chat')
 
   // Get or create conversation
   const { data: conversationData, isLoading: conversationLoading, error: conversationError } = useQuery({
@@ -211,12 +213,12 @@ export function ChatModal({ isOpen, onClose, listingId, sellerId, listingTitle, 
                   <div className="text-center py-8">
                     <div className="loading-spinner w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full mx-auto mb-2"></div>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {conversationLoading ? 'Setting up conversation...' : 'Loading messages...'}
+                      {conversationLoading ? t('settingUpConversation') : t('loadingMessagesShort')}
                     </p>
                   </div>
                 ) : conversationError || messagesError ? (
                   <div className="text-center py-8">
-                    <p className="text-sm text-red-500 dark:text-red-400 mb-2">Failed to load chat</p>
+                    <p className="text-sm text-red-500 dark:text-red-400 mb-2">{t('failedToLoadChat')}</p>
                     <p className="text-xs text-gray-400 dark:text-gray-500">
                       {conversationError?.message || messagesError?.message}
                     </p>
@@ -224,8 +226,8 @@ export function ChatModal({ isOpen, onClose, listingId, sellerId, listingTitle, 
                 ) : messages.length === 0 ? (
                   <div className="text-center py-8">
                     <MessageCircle className="h-8 w-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
-                    <p className="text-sm text-gray-500 dark:text-gray-400">No messages yet</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Start the conversation!</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('noMessagesYet')}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('startConversation')}</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -275,7 +277,7 @@ export function ChatModal({ isOpen, onClose, listingId, sellerId, listingTitle, 
                       handleSendMessage(e as any)
                     }
                   }}
-                  placeholder="Type your message..."
+                  placeholder={t('typeMessage')}
                   className="flex-1 text-sm border border-gray-300 dark:border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white dark:bg-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                   disabled={sendMessageMutation.isPending}
                 />

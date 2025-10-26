@@ -26,6 +26,8 @@ export function CookieBanner() {
   const handleAccept = () => {
     setCookieConsent(true)
     setShowBanner(false)
+    // Dispatch event to notify other components that cookies were accepted
+    window.dispatchEvent(new CustomEvent('cookieConsentAccepted'))
   }
 
   const handleDismiss = () => {
